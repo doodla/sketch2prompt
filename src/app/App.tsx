@@ -1,3 +1,6 @@
+import { ReactFlowProvider } from '@xyflow/react'
+import { Canvas } from '../components/Canvas'
+
 export function App() {
   return (
     <div className="flex h-screen flex-col bg-bg">
@@ -10,11 +13,10 @@ export function App() {
           {/* Toolbar placeholder */}
         </aside>
 
-        <div className="flex-1 bg-bg-tertiary">
-          {/* Canvas placeholder */}
-          <div className="flex h-full items-center justify-center">
-            <p className="text-text-muted">Canvas will render here</p>
-          </div>
+        <div className="flex-1">
+          <ReactFlowProvider>
+            <Canvas />
+          </ReactFlowProvider>
         </div>
 
         <aside className="w-72 border-l border-border bg-bg-secondary">
