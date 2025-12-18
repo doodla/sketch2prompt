@@ -319,8 +319,12 @@ describe('generateComponentYamlTemplate', () => {
 
     const result = generateComponentYamlTemplate(node, [], [node])
 
-    expect(result).toContain('NEVER')
-    expect(result).toContain('render HTML or serve static files')
+    // Enhanced format includes pattern, reason, and instead fields
+    expect(result).toContain('pattern: NEVER')
+    expect(result).toContain('reason:')
+    expect(result).toContain('instead:')
+    // Check for actual backend anti-responsibility content
+    expect(result).toContain('trust client-provided data without validation')
   })
 
   it('includes type-specific default constraints', () => {

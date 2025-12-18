@@ -69,8 +69,8 @@ const DEFAULT_RESPONSIBILITIES: Record<NodeType, string[]> = {
   ],
 }
 
-// Type-specific anti-responsibilities (NEVER statements with reasons)
-const DEFAULT_ANTI_RESPONSIBILITIES: Record<NodeType, string[]> = {
+// Legacy string-based anti-responsibilities - new code uses ENHANCED_ANTI_RESPONSIBILITIES
+const _DEFAULT_ANTI_RESPONSIBILITIES: Record<NodeType, string[]> = {
   frontend: [
     'NEVER store sensitive data in localStorage or client state — easily accessible by malicious scripts',
     'NEVER trust client-side validation alone — always re-validate server-side',
@@ -240,6 +240,279 @@ const DEFAULT_CONSTRAINTS: Record<NodeType, { security: string[]; performance: s
 }
 
 /**
+ * Enhanced anti-responsibilities with structured reasoning
+ */
+interface AntiResponsibility {
+  pattern: string
+  reason: string
+  instead?: string
+}
+
+const ENHANCED_ANTI_RESPONSIBILITIES: Record<NodeType, AntiResponsibility[]> = {
+  frontend: [
+    {
+      pattern: 'NEVER store sensitive data in localStorage or sessionStorage',
+      reason: 'Client storage is accessible to any script on the page, including XSS attacks',
+      instead: 'Use httpOnly cookies for tokens, or encrypt sensitive data before storing',
+    },
+    {
+      pattern: 'NEVER trust client-side validation alone',
+      reason: 'Client code can be bypassed or modified by users',
+      instead: 'Always re-validate on the server; client validation is for UX only',
+    },
+    {
+      pattern: 'NEVER make direct database connections',
+      reason: 'Exposes credentials and bypasses business logic',
+      instead: 'All data flows through backend API endpoints',
+    },
+    {
+      pattern: 'NEVER implement business logic in UI components',
+      reason: 'Makes logic hard to test and leads to duplication',
+      instead: 'Keep components presentational; logic lives in services/hooks/backend',
+    },
+  ],
+  backend: [
+    {
+      pattern: 'NEVER trust client-provided data without validation',
+      reason: 'Clients can send any data, including malicious payloads',
+      instead: 'Validate ALL inputs with schema validation (Zod, Joi, etc.)',
+    },
+    {
+      pattern: 'NEVER expose internal error details to clients',
+      reason: 'Stack traces reveal implementation details useful for attacks',
+      instead: 'Log full errors internally; return safe, generic messages to clients',
+    },
+    {
+      pattern: 'NEVER store secrets in code or version control',
+      reason: 'Secrets in code get leaked through repos, logs, error messages',
+      instead: 'Use environment variables or secret management services',
+    },
+    {
+      pattern: 'NEVER trust client-provided IDs for authorization',
+      reason: "Users can manipulate IDs to access others' data",
+      instead: 'Always verify ownership/permissions server-side',
+    },
+  ],
+  storage: [
+    {
+      pattern: 'NEVER expose direct connections to frontend',
+      reason: 'Bypasses authentication, authorization, and business logic',
+      instead: 'All access through backend API layer',
+    },
+    {
+      pattern: 'NEVER store computed values that can be derived',
+      reason: 'Creates data inconsistency when source changes',
+      instead: 'Calculate at query time or use materialized views with refresh',
+    },
+    {
+      pattern: 'NEVER use database triggers for business logic',
+      reason: 'Triggers are hard to test, debug, and reason about',
+      instead: "Keep logic in application layer where it's explicit and testable",
+    },
+    {
+      pattern: 'NEVER store large files/blobs in the database',
+      reason: 'Bloats database, slows backups, hurts performance',
+      instead: 'Use object storage (S3, GCS) and store URLs/references',
+    },
+  ],
+  auth: [
+    {
+      pattern: 'NEVER store plain-text passwords',
+      reason: 'Database breaches expose all user credentials',
+      instead: 'Use bcrypt, argon2, or scrypt with appropriate cost factors',
+    },
+    {
+      pattern: 'NEVER implement custom cryptography',
+      reason: 'Crypto is extremely hard to get right; subtle bugs are exploitable',
+      instead: 'Use battle-tested libraries (e.g., crypto built-ins, jose for JWT)',
+    },
+    {
+      pattern: 'NEVER skip rate limiting on auth endpoints',
+      reason: 'Enables brute force and credential stuffing attacks',
+      instead: 'Rate limit by IP and account; implement exponential backoff',
+    },
+    {
+      pattern: 'NEVER log passwords, tokens, or session data',
+      reason: 'Logs are often less protected than production data',
+      instead: 'Mask sensitive fields; log only non-sensitive identifiers',
+    },
+  ],
+  external: [
+    {
+      pattern: 'NEVER store API keys in code',
+      reason: 'Keys in code end up in version control and logs',
+      instead: 'Use environment variables or secret management',
+    },
+    {
+      pattern: 'NEVER assume external services are always available',
+      reason: 'External services have outages, rate limits, and latency spikes',
+      instead: 'Implement timeouts, retries with backoff, and fallback behavior',
+    },
+    {
+      pattern: 'NEVER trust external data without validation',
+      reason: 'External APIs can return unexpected formats or malicious data',
+      instead: 'Validate/sanitize all external data before use',
+    },
+    {
+      pattern: 'NEVER ignore rate limits',
+      reason: 'Exceeding limits can get your API access revoked',
+      instead: 'Implement request queuing and respect rate limit headers',
+    },
+  ],
+  background: [
+    {
+      pattern: 'NEVER assume jobs run exactly once',
+      reason: 'Jobs can be retried on failure, timeout, or system restart',
+      instead: 'Design all jobs to be idempotent (safe to run multiple times)',
+    },
+    {
+      pattern: 'NEVER store job state only in memory',
+      reason: 'Memory is lost on restart; jobs will be lost',
+      instead: 'Use persistent queue (Redis, PostgreSQL, RabbitMQ)',
+    },
+    {
+      pattern: 'NEVER ignore failed jobs',
+      reason: 'Silent failures hide bugs and data inconsistencies',
+      instead: 'Implement dead letter queues and alerting for failures',
+    },
+    {
+      pattern: 'NEVER block request handlers with long-running work',
+      reason: 'Ties up server resources and degrades user experience',
+      instead: 'Queue work for background processing; return immediately',
+    },
+  ],
+}
+
+/**
+ * Development workflow phases - domain-agnostic implementation guidance
+ */
+const DEVELOPMENT_WORKFLOW = `## Development Workflow
+
+Follow this sequence for all feature implementation:
+
+### Phase 1: Research
+- Understand the existing code before modifying
+- Map affected files and dependencies
+- Identify existing patterns to follow
+- Index relevant code sections, don't jump to implementation
+
+### Phase 2: Planning
+- Define what will change and why
+- Identify integration points with other components
+- List files to create/modify
+- Flag any architectural decisions needing review
+
+### Phase 3: Library Verification
+Before implementing functionality, check:
+- Does this functionality exist in the codebase already?
+- Is there a well-maintained package that solves this?
+- Would custom code be simpler than adding a dependency?
+- If adding a package: check maintenance status, bundle size, security
+
+### Phase 4: Implementation
+- Follow the plan from Phase 2
+- Keep changes focused and testable
+- Match existing code patterns and conventions
+- Don't deviate from the plan without documenting why
+
+### Phase 5: Verification
+- Run all relevant tests
+- Check for unintended side effects
+- Verify changes meet acceptance criteria
+- Review against this document's constraints`
+
+/**
+ * Dependency management policy - prevents dependency bloat
+ */
+const DEPENDENCY_POLICY = `## Dependency Policy
+
+### Before Adding Any Dependency
+
+1. **Check native APIs first** - Modern runtimes have built-in solutions
+2. **Search the codebase** - May already exist as a utility
+3. **Evaluate the package**:
+   - Last update within 12 months?
+   - Reasonable adoption for its ecosystem?
+   - No known security vulnerabilities?
+   - Reasonable bundle size for its purpose?
+
+### Prefer
+
+- Official SDKs over community wrappers
+- Single-purpose packages over monolithic solutions
+- Packages with TypeScript support built-in
+- Well-documented packages with active communities
+
+### Avoid
+
+- Packages with no updates in 12+ months
+- Dependencies for trivial functionality
+- Packages with heavy transitive dependencies
+- Unmaintained forks of popular packages
+
+### When in Doubt
+
+Ask before adding dependencies that:
+- Significantly increase bundle size
+- Have very low adoption
+- Require native/binary components
+- Are in alpha/beta status`
+
+/**
+ * Decision authority guidelines - when to decide vs. escalate
+ */
+const DECISION_GUIDELINES = `## Decision Guidelines
+
+### Make Pragmatic Decisions For
+
+- Implementation details within established patterns
+- Package selection that meets the Dependency Policy
+- Test organization and coverage strategies
+- Code organization within existing structure
+- Minor refactoring that improves clarity
+- Error message wording and formatting
+
+### Escalate or Ask About
+
+- Breaking changes to existing interfaces
+- New architectural patterns not in the codebase
+- Security-sensitive functionality
+- Significant new dependencies
+- Changes that affect multiple components
+- Deviations from constraints in this document
+- Performance tradeoffs with user-facing impact`
+
+/**
+ * Quality gates - minimum requirements before completion
+ */
+const QUALITY_GATES = `## Quality Gates
+
+Before considering any task complete:
+
+### Code Quality
+- [ ] Code follows naming conventions in this document
+- [ ] No untyped variables (use proper types, avoid \`any\`)
+- [ ] No debug statements left in code
+- [ ] Error handling is explicit, not swallowed
+- [ ] No hardcoded values that should be configurable
+
+### Security
+- [ ] No secrets in code (API keys, passwords, tokens)
+- [ ] All user inputs validated before use
+- [ ] No injection vulnerabilities
+- [ ] Sensitive data not logged
+
+### Testing
+- [ ] Critical paths have test coverage
+- [ ] Tests actually verify behavior, not just run
+- [ ] Edge cases considered
+
+### Documentation
+- [ ] Complex logic has explanatory comments (why, not what)
+- [ ] Public interfaces have clear contracts
+- [ ] Breaking changes documented`
+
+/**
  * Detect project type from nodes
  */
 function detectProjectType(nodes: DiagramNode[]): string {
@@ -332,10 +605,25 @@ ${boundaries.isNot.map((b) => `- ${b}`).join('\n')}
   // Integration Rules section
   const integrationRules = generateIntegrationRules(nodes, edges)
 
-  // Assemble complete document
+  // Assemble complete document with enhanced framework sections
   return `# ${projectName} - System Rules
 
+> **Load this file FIRST** before any component specs.
+> Component specs in \`specs/*.yaml\` extend these rules.
+
 ${systemOverview}
+
+---
+
+${DEVELOPMENT_WORKFLOW}
+
+---
+
+${DEPENDENCY_POLICY}
+
+---
+
+${DECISION_GUIDELINES}
 
 ---
 
@@ -356,6 +644,10 @@ ${buildOrder}
 ---
 
 ${integrationRules}
+
+---
+
+${QUALITY_GATES}
 `
 }
 
@@ -774,7 +1066,7 @@ function inferCommunicationPattern(sourceType: NodeType, targetType: NodeType): 
 }
 
 /**
- * Generate component YAML template
+ * Generate component YAML template with enhanced anti-responsibilities
  */
 export function generateComponentYamlTemplate(
   node: DiagramNode,
@@ -786,26 +1078,36 @@ export function generateComponentYamlTemplate(
   // Find connected nodes
   const connectedEdges = edges.filter((e) => e.source === node.id || e.target === node.id)
 
-  const integrationPoints = connectedEdges.map((edge) => {
-    const isSource = edge.source === node.id
-    const connectedId = isSource ? edge.target : edge.source
-    const connectedNode = nodeMap.get(connectedId)
+  const integrationPoints = connectedEdges
+    .map((edge) => {
+      const isSource = edge.source === node.id
+      const connectedId = isSource ? edge.target : edge.source
+      const connectedNode = nodeMap.get(connectedId)
 
-    if (!connectedNode) {
-      return null
-    }
+      if (!connectedNode) {
+        return null
+      }
 
-    const relationship = edge.data?.label || '# AI: Describe the relationship'
+      const relationship = edge.data?.label || '# AI: Describe the relationship'
 
-    return {
-      component: connectedNode.data.label,
-      relationship,
-    }
-  }).filter((ip): ip is { component: string; relationship: string } => ip !== null)
+      return {
+        component: connectedNode.data.label,
+        relationship,
+      }
+    })
+    .filter((ip): ip is { component: string; relationship: string } => ip !== null)
 
-  // Build YAML object
+  // Build enhanced anti-responsibilities with structured format
+  const enhancedAntiResponsibilities = ENHANCED_ANTI_RESPONSIBILITIES[node.data.type].map((ar) => ({
+    pattern: ar.pattern,
+    reason: ar.reason,
+    ...(ar.instead && { instead: ar.instead }),
+  }))
+
+  // Build YAML object with enhanced structure
   const yamlData = {
     spec_version: '1.0',
+    extends_project_rules: true, // Explicit inheritance marker
     component_id: node.id,
     name: node.data.label,
     type: node.data.type,
@@ -816,8 +1118,12 @@ export function generateComponentYamlTemplate(
     responsibilities: DEFAULT_RESPONSIBILITIES[node.data.type].concat([
       '# AI: Elaborate based on project context and integrations',
     ]),
-    anti_responsibilities: DEFAULT_ANTI_RESPONSIBILITIES[node.data.type].concat([
-      '# AI: Add boundaries based on integration points',
+    // Enhanced: structured anti-responsibilities with reasoning
+    anti_responsibilities: enhancedAntiResponsibilities.concat([
+      {
+        pattern: '# AI: Add component-specific boundary',
+        reason: '# AI: Explain why this boundary exists',
+      },
     ]),
     integration_points:
       integrationPoints.length > 0
@@ -829,7 +1135,7 @@ export function generateComponentYamlTemplate(
       references: [
         {
           url: '# AI: Add URL to official docs or package index',
-          type: 'official_docs|package_index',
+          type: 'official_docs',
         },
       ],
     },
@@ -842,6 +1148,12 @@ export function generateComponentYamlTemplate(
         '# AI: Add component-specific architectural decisions',
       ]),
     },
+    // NEW: Quality checklist for this component
+    quality_checklist: [
+      'Follows project-wide code standards from PROJECT_RULES.md',
+      'All anti-responsibilities enforced',
+      `# AI: Add ${node.data.type}-specific quality checks`,
+    ],
   }
 
   // Add type-specific fields
@@ -946,3 +1258,7 @@ function generateTypeSpecificFields(type: NodeType): Record<string, unknown> {
       return {}
   }
 }
+
+// Export the enhanced anti-responsibilities for use by other modules
+export { ENHANCED_ANTI_RESPONSIBILITIES }
+export type { AntiResponsibility }
