@@ -9,6 +9,7 @@ import type {
   NodeType,
 } from './types'
 import { createNodeId, createEdgeId } from './id'
+import { getDefaultTechStack } from './default-tech-stacks'
 
 // State that gets tracked in history (partialized)
 type TrackedState = {
@@ -58,7 +59,9 @@ export const useStore = create<DiagramStore>()(
               data: {
                 label: getDefaultLabel(type),
                 type,
-                meta: {},
+                meta: {
+                  techStack: getDefaultTechStack(type),
+                },
               },
             },
           ],

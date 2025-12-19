@@ -7,6 +7,7 @@ export const nodeTypeSchema = z.enum(nodeTypeValues)
 
 export const nodeMetaSchema = z.object({
   description: z.string().optional(),
+  techStack: z.array(z.string()).optional(),
 })
 
 export const positionSchema = z.object({

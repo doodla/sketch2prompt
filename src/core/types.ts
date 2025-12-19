@@ -13,6 +13,7 @@ export type NodeType = (typeof NODE_TYPES)[keyof typeof NODE_TYPES]
 
 export type NodeMeta = {
   description?: string
+  techStack?: string[]
 }
 
 export type DiagramNodeData = {
@@ -57,4 +58,12 @@ export type SerializedDiagram = {
   createdAt: string
   nodes: SerializedNode[]
   edges: SerializedEdge[]
+}
+
+export type RecommendationCategory = 'managed' | 'self-hosted'
+
+export interface TechRecommendation {
+  name: string
+  category: RecommendationCategory
+  hasFreeTier: boolean
 }
