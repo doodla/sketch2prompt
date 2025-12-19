@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react'
 import {
   ReactFlow,
   Background,
+  BackgroundVariant,
   Controls,
   MiniMap,
   type OnNodesChange,
@@ -16,6 +17,8 @@ import {
 import '@xyflow/react/dist/style.css'
 import { useStore } from '../core/store'
 import { nodeTypes } from './nodes'
+import { QuickAddFAB } from './QuickAddFAB'
+import { EmptyCanvasState } from './EmptyCanvasState'
 import type { DiagramNode, DiagramEdge, NodeType } from '../core/types'
 
 const NODE_TYPES_CYCLE: NodeType[] = [
@@ -87,37 +90,84 @@ function CanvasInner({ colorMode }: CanvasInnerProps) {
     [screenToFlowPosition, addNode, nodes.length]
   )
 
+  const isEmpty = nodes.length === 0
+
   return (
-    <ReactFlow
-      nodes={nodes}
-      edges={edges}
-      nodeTypes={nodeTypes}
-      onNodesChange={onNodesChange}
-      onEdgesChange={onEdgesChange}
-      onConnect={onConnect}
-      onDoubleClick={onDoubleClick}
-      colorMode={colorMode}
-      snapToGrid
-      snapGrid={[16, 16]}
-      fitView
-      deleteKeyCode={['Backspace', 'Delete']}
-      defaultEdgeOptions={{
-        type: 'smoothstep',
-        labelStyle: { fill: 'var(--text-muted)', fontSize: 12 },
-        labelBgStyle: { fill: 'var(--bg)', fillOpacity: 0.8 },
-        labelBgPadding: [4, 2] as [number, number],
-        labelBgBorderRadius: 4,
-      }}
-    >
-      <Background gap={16} size={1} />
-      <Controls />
-      <MiniMap
-        pannable
-        zoomable
-        nodeStrokeWidth={3}
-        className="!bg-bg-secondary !border-border"
-      />
-    </ReactFlow>
+    <>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        nodeTypes={nodeTypes}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        onDoubleClick={onDoubleClick}
+        colorMode={colorMode}
+        snapToGrid
+        snapGrid={[16, 16]}
+        fitView
+        deleteKeyCode={['Backspace', 'Delete']}
+        defaultEdgeOptions={{
+          type: 'smoothstep',
+          style: {
+            stroke: 'var(--color-border)',
+            strokeWidth: 1.5,
+          },
+          labelStyle: {
+            fill: 'var(--color-text-secondary)',
+            fontSize: 11,
+            fontFamily: 'var(--font-family-mono)',
+          },
+          labelBgStyle: {
+            fill: 'var(--color-surface-0)',
+            fillOpacity: 0.9,
+          },
+          labelBgPadding: [6, 4] as [number, number],
+          labelBgBorderRadius: 4,
+        }}
+      >
+        <Background
+          variant={BackgroundVariant.Dots}
+          gap={20}
+          size={1}
+          color="var(--color-grid-line)"
+          className="!bg-canvas-bg"
+        />
+        <Controls
+          position="bottom-left"
+          className="
+            !bg-white dark:!bg-slate-900
+            !border !border-slate-200 dark:!border-slate-700
+            !rounded-lg !shadow-md
+            !left-4 !bottom-4
+            !overflow-hidden
+            [&>button]:!bg-white dark:[&>button]:!bg-slate-900
+            [&>button]:!border-0 [&>button]:!border-b [&>button]:!border-slate-200 dark:[&>button]:!border-slate-700
+            [&>button]:!rounded-none
+            [&>button:last-child]:!border-b-0
+            [&>button]:!text-slate-600 dark:[&>button]:!text-slate-300
+            [&>button:hover]:!bg-slate-100 dark:[&>button:hover]:!bg-slate-800
+            [&>button]:!transition-colors [&>button]:!duration-150
+          "
+        />
+        <MiniMap
+          pannable
+          zoomable
+          nodeStrokeWidth={3}
+          position="bottom-right"
+          className="
+            !bg-white/90 dark:!bg-slate-900/90
+            !border !border-slate-200 dark:!border-slate-700
+            !rounded-xl !shadow-md
+            !right-4 !bottom-4
+            backdrop-blur-sm
+          "
+          maskColor="rgba(0, 0, 0, 0.08)"
+        />
+      </ReactFlow>
+      {isEmpty && <EmptyCanvasState />}
+      <QuickAddFAB />
+    </>
   )
 }
 
@@ -127,7 +177,7 @@ interface CanvasProps {
 
 export function Canvas({ colorMode = 'light' }: CanvasProps) {
   return (
-    <div className="h-full w-full">
+    <div className="h-full w-full bg-canvas-bg">
       <CanvasInner colorMode={colorMode} />
     </div>
   )
