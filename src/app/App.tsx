@@ -23,6 +23,7 @@ const ONBOARDING_STORAGE_KEY = 'sketch2prompt:onboarding-completed'
 export function App() {
   const [isExportOpen, setIsExportOpen] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
+  const [showQuickStartHint, setShowQuickStartHint] = useState(false)
   const [isDark, setIsDark] = useState(() =>
     typeof window !== 'undefined'
       ? window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -118,6 +119,20 @@ export function App() {
     localStorage.setItem(ONBOARDING_STORAGE_KEY, 'true')
     setShowOnboarding(false)
   }, [])
+
+  // Show Quick Start hint after delay when canvas is empty
+  useEffect(() => {
+    if (nodesCount === 0 && !showOnboarding) {
+      const showTimer = setTimeout(() => setShowQuickStartHint(true), 2000)
+      const hideTimer = setTimeout(() => setShowQuickStartHint(false), 7000)
+      return () => {
+        clearTimeout(showTimer)
+        clearTimeout(hideTimer)
+      }
+    } else {
+      setShowQuickStartHint(false)
+    }
+  }, [nodesCount, showOnboarding])
 
   useKeyboardShortcuts(
     [
@@ -263,16 +278,28 @@ export function App() {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Quick Start button (only when empty) */}
+          {/* Quick Start button with sliding hint */}
           {nodesCount === 0 && (
-            <button
-              onClick={handleShowOnboarding}
-              title="Start with guided setup"
-              className="flex items-center gap-2 rounded-lg border border-[var(--color-wizard-accent)]/30 bg-[var(--color-wizard-accent)]/10 px-3.5 py-2 text-[13px] font-medium text-[var(--color-wizard-accent)] transition-all duration-200 hover:bg-[var(--color-wizard-accent)]/20 hover:border-[var(--color-wizard-accent)]/50 hover:shadow-[var(--shadow-glow-subtle)] cursor-pointer"
-            >
-              <Play className="h-4 w-4" />
-              <span className="hidden sm:inline">Quick Start</span>
-            </button>
+            <div className="relative flex items-center">
+              {/* Hint that slides out from behind button */}
+              <div
+                className={`absolute right-full mr-2 whitespace-nowrap text-[11px] text-[var(--color-workshop-text-muted)] transition-all duration-500 ${
+                  showQuickStartHint
+                    ? 'opacity-100 translate-x-0'
+                    : 'opacity-0 translate-x-4 pointer-events-none'
+                }`}
+              >
+                <span className="hidden sm:inline">new here? try →</span>
+              </div>
+              <button
+                onClick={handleShowOnboarding}
+                title="Start with guided setup"
+                className="flex items-center gap-2 rounded-lg border border-[var(--color-wizard-accent)]/30 bg-[var(--color-wizard-accent)]/10 px-3.5 py-2 text-[13px] font-medium text-[var(--color-wizard-accent)] transition-all duration-200 hover:bg-[var(--color-wizard-accent)]/20 hover:border-[var(--color-wizard-accent)]/50 hover:shadow-[var(--shadow-glow-subtle)] cursor-pointer"
+              >
+                <Play className="h-4 w-4" />
+                <span className="hidden sm:inline">Quick Start</span>
+              </button>
+            </div>
           )}
 
           {/* GitHub link */}

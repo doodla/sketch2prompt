@@ -1,40 +1,8 @@
-import { useState, useEffect } from 'react'
 import { Layers, Plus } from 'lucide-react'
 
 export function EmptyCanvasState() {
-  const [showHint, setShowHint] = useState(false)
-  const [fadeOut, setFadeOut] = useState(false)
-
-  useEffect(() => {
-    const showTimer = setTimeout(() => setShowHint(true), 2000)
-    const fadeTimer = setTimeout(() => setFadeOut(true), 8000)
-    const hideTimer = setTimeout(() => setShowHint(false), 9000)
-    return () => {
-      clearTimeout(showTimer)
-      clearTimeout(fadeTimer)
-      clearTimeout(hideTimer)
-    }
-  }, [])
-
   return (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-      {/* Floating hint positioned toward top-right, pointing to Quick Start */}
-      {showHint && (
-        <div
-          className={`absolute top-24 right-8 sm:right-12 flex items-end gap-2 transition-opacity duration-700 ${fadeOut ? 'opacity-0' : 'opacity-100'}`}
-          style={{ animation: 'fadeSlideIn 0.5s ease-out' }}
-        >
-          <div className="flex flex-col items-end gap-1">
-            <span className="text-[11px] text-[var(--color-workshop-text-subtle)] tracking-wide">
-              new here?
-            </span>
-            <span className="text-xs text-[var(--color-workshop-text-muted)]">
-              try <span className="text-[var(--color-workshop-text)]">Quick Start</span> →
-            </span>
-          </div>
-        </div>
-      )}
-
       <div className="flex flex-col items-center gap-4 text-center max-w-sm">
         <div className="p-4 rounded-full bg-[var(--color-workshop-elevated)] border border-[var(--color-workshop-border)] animate-in fade-in duration-500">
           <Layers className="h-8 w-8 text-[var(--color-workshop-text-muted)]" />
