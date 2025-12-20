@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { ReactFlowProvider } from '@xyflow/react'
 import { useShallow } from 'zustand/react/shallow'
+import { Analytics } from '@vercel/analytics/react'
 import { FileOutput, Undo2, Redo2, Play, Search, Github } from 'lucide-react'
 import { Canvas } from '../components/Canvas'
 import { Inspector } from '../components/Inspector'
@@ -352,6 +353,7 @@ export function App() {
           onDismiss={handleDismissFirstLaunch}
         />
       )}
+      <Analytics />
     </div>
   )
 }
