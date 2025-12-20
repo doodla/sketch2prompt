@@ -21,10 +21,7 @@ const ONBOARDING_STORAGE_KEY = 'sketch2prompt:onboarding-completed'
 
 export function App() {
   const [isExportOpen, setIsExportOpen] = useState(false)
-  const [showOnboarding, setShowOnboarding] = useState(() => {
-    if (typeof window === 'undefined') return false
-    return localStorage.getItem(ONBOARDING_STORAGE_KEY) !== 'true'
-  })
+  const [showOnboarding, setShowOnboarding] = useState(false)
   const [isDark, setIsDark] = useState(() =>
     typeof window !== 'undefined'
       ? window.matchMedia('(prefers-color-scheme: dark)').matches
