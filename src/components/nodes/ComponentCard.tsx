@@ -75,7 +75,7 @@ export function ComponentCard({ id, data, selected }: NodeProps<DiagramNode>) {
         role="article"
         aria-label={`${typeLabel} component: ${data.label}`}
         className={`
-          relative min-w-56 max-w-80 rounded-xl overflow-hidden
+          relative min-w-56 max-w-80 rounded-xl
           transition-all duration-300 ease-out
           cursor-pointer
           ${selected ? 'corner-brackets active' : ''}

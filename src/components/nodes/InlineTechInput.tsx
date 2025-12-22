@@ -197,15 +197,13 @@ export function InlineTechInput({
             {/* Autocomplete dropdown */}
             {query.length > 0 && suggestions.length > 0 && (
               <div
-                className={`
-                  absolute left-0 top-full mt-1.5 z-50
-                  w-52 max-h-52 overflow-y-auto
-                  bg-white dark:bg-slate-900
-                  border border-slate-200 dark:border-slate-700
-                  rounded-lg shadow-lg
-                  py-1.5
-                  dropdown-animate custom-scrollbar
-                `}
+                className="absolute left-0 top-full mt-1.5 w-52 max-h-52 overflow-y-auto rounded-lg py-1.5 dropdown-animate custom-scrollbar"
+                style={{
+                  zIndex: 9999,
+                  background: 'var(--color-workshop-elevated)',
+                  border: '1px solid var(--color-workshop-border-accent)',
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--color-workshop-border)',
+                }}
               >
                 {suggestions.map((suggestion, index) => (
                   <button
@@ -216,21 +214,31 @@ export function InlineTechInput({
                       handleAddTech(suggestion.name)
                     }}
                     onMouseEnter={() => { setSelectedIndex(index); }}
-                    className={`
-                      w-full px-3 py-2 text-left cursor-pointer
-                      flex items-center justify-between gap-2
-                      transition-colors duration-100
-                      ${
-                        index === selectedIndex
-                          ? 'bg-slate-100 dark:bg-slate-800'
-                          : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
-                      }
-                    `}
+                    className="w-full px-3 py-2 text-left cursor-pointer flex items-center justify-between gap-2 transition-colors duration-100"
+                    style={{
+                      background: index === selectedIndex
+                        ? 'var(--color-wizard-accent-subtle)'
+                        : 'transparent',
+                    }}
                   >
-                    <span className="font-mono text-[12px] text-slate-800 dark:text-slate-100">
+                    <span
+                      className="text-[12px]"
+                      style={{
+                        fontFamily: 'var(--font-family-mono)',
+                        color: index === selectedIndex
+                          ? 'var(--color-wizard-accent)'
+                          : 'var(--color-workshop-text)',
+                      }}
+                    >
                       {suggestion.name}
                     </span>
-                    <span className="font-mono text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wide">
+                    <span
+                      className="text-[10px] uppercase tracking-wide"
+                      style={{
+                        fontFamily: 'var(--font-family-mono)',
+                        color: 'var(--color-workshop-text-subtle)',
+                      }}
+                    >
                       {suggestion.category}
                     </span>
                   </button>
@@ -241,17 +249,32 @@ export function InlineTechInput({
             {/* Show "press enter to add custom" hint when no matches */}
             {query.length > 0 && suggestions.length === 0 && (
               <div
-                className={`
-                  absolute left-0 top-full mt-1.5 z-50
-                  w-52 px-3 py-2.5
-                  bg-white dark:bg-slate-900
-                  border border-slate-200 dark:border-slate-700
-                  rounded-lg shadow-lg
-                  dropdown-animate
-                `}
+                className="absolute left-0 top-full mt-1.5 w-52 px-3 py-2.5 rounded-lg dropdown-animate"
+                style={{
+                  zIndex: 9999,
+                  background: 'var(--color-workshop-elevated)',
+                  border: '1px solid var(--color-workshop-border-accent)',
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--color-workshop-border)',
+                }}
               >
-                <span className="font-mono text-[11px] text-slate-500 dark:text-slate-400">
-                  Press <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px]">Enter</kbd> to add "<span className="text-slate-700 dark:text-slate-200">{query}</span>"
+                <span
+                  className="text-[11px]"
+                  style={{
+                    fontFamily: 'var(--font-family-mono)',
+                    color: 'var(--color-workshop-text-muted)',
+                  }}
+                >
+                  Press{' '}
+                  <kbd
+                    className="px-1.5 py-0.5 rounded text-[10px]"
+                    style={{
+                      background: 'var(--color-workshop-bg)',
+                      color: 'var(--color-workshop-text)',
+                    }}
+                  >
+                    Enter
+                  </kbd>{' '}
+                  to add "<span style={{ color: 'var(--color-wizard-accent)' }}>{query}</span>"
                 </span>
               </div>
             )}
