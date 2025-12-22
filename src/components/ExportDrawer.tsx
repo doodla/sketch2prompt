@@ -653,6 +653,7 @@ export function ExportDrawer({ isOpen, onClose }: ExportDrawerProps) {
           void handleExportBlueprint()
         }}
         onCancel={() => {
+          stopStreaming()
           setShowPreview(false)
         }}
       />

@@ -329,7 +329,7 @@ export function BlueprintPreviewModal({
                 'rounded p-2 transition-all duration-200',
                 isStreaming
                   ? 'opacity-30 cursor-not-allowed'
-                  : 'hover:bg-[var(--color-workshop-elevated)] text-[var(--color-workshop-text-muted)] hover:text-[var(--color-workshop-text)]'
+                  : 'cursor-pointer hover:bg-[var(--color-workshop-elevated)] text-[var(--color-workshop-text-muted)] hover:text-[var(--color-workshop-text)]'
               )}
               aria-label="Close preview"
             >
@@ -538,19 +538,19 @@ export function BlueprintPreviewModal({
             <div className="flex items-center gap-3">
               <button
                 onClick={handleClose}
-                disabled={isLoading || isStreaming}
+                disabled={isLoading}
                 className={cn(
                   'px-4 py-2 text-sm font-medium rounded transition-all duration-200',
-                  isLoading || isStreaming
+                  isLoading
                     ? 'opacity-40 cursor-not-allowed'
-                    : 'hover:bg-[var(--color-workshop-elevated)]'
+                    : 'cursor-pointer hover:bg-[var(--color-workshop-elevated)]'
                 )}
                 style={{
                   color: 'var(--color-workshop-text-muted)',
                   border: '1px solid var(--color-workshop-border)',
                 }}
               >
-                Cancel
+                {isStreaming ? 'Stop' : 'Cancel'}
               </button>
 
               <button
@@ -560,7 +560,7 @@ export function BlueprintPreviewModal({
                   'flex items-center gap-2 px-5 py-2 text-sm font-medium rounded transition-all duration-200',
                   isLoading || isStreaming
                     ? 'opacity-60 cursor-not-allowed'
-                    : 'hover:brightness-110'
+                    : 'cursor-pointer hover:brightness-110'
                 )}
                 style={{
                   background: isStreaming
