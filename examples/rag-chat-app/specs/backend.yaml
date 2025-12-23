@@ -1,0 +1,119 @@
+spec_version: "1.0"
+component_id: "node_IGpBRDK8v5"
+name: "Backend"
+type: "backend"
+description: |
+  The Backend provides a RESTful API that powers the Web App, mediating data flows between the user interface, the database, and the vector store. Built with Python and FastAPI, it handles routing, validation, authentication, and standardized error handling while keeping the service stateless and observable.
+
+responsibilities:
+- Expose versioned REST endpoints for application features, search, and health checks.
+- Validate inputs and enforce authentication/authorization and rate limits.
+- Orchestrate vector store operations for embedding upserts and similarity search.
+- Execute parameterized database queries and return normalized responses.
+- Produce structured logs, metrics, and trace context for observability.
+
+anti_responsibilities:
+- NEVER expose secrets or internal stack traces in API responses — security and confidentiality.
+- NEVER bypass authentication or authorization checks — preserves data integrity and access control.
+- NEVER couple to frontend rendering or UI concerns — separation of concerns.
+- NEVER write unvalidated embeddings or raw SQL to downstream systems — prevents corruption and injection.
+- NEVER rely on in-memory state for durability — ensures stateless, horizontally scalable service.
+
+integration_points:
+- component: Web App
+  direction: inbound
+  purpose: The Web App calls the Backend REST API to read/write application data and trigger searches.
+  contract:
+    request: '{ method: "GET|POST|PUT|DELETE", path: "/v1/{resource}", headers: { Authorization?: "Bearer <token>", "X-Request-Id"?: string }, query?: object, body?: object }'
+    response: '{ status: number, headers: { "Content-Type": "application/json", "X-Request-Id": string }, body: object | { error: { code: string, message: string, details?: object, requestId: string } } }'
+- component: Vector Store
+  direction: outbound
+  purpose: Persist and query vector embeddings for semantic search and retrieval.
+  contract:
+    request: '{ operation: "upsert|search|delete", payload: { id?: string, vectors?: number[][], vector?: number[], topK?: number, metadata?: object, namespace?: string } }'
+    response: '{ ok: boolean, results?: [{ id: string, score: number, metadata?: object }], upserted?: number, deleted?: number, error?: { code: string, message: string } }'
+- component: Database
+  direction: outbound
+  purpose: Run parameterized queries and transactions for system of record data.
+  contract:
+    request: '{ operation: "query|execute", sql: string, params?: any[], txId?: string }'
+    response: '{ ok: boolean, rows?: object[], rowCount?: number, lastInsertId?: string, error?: { code: string, message: string } }'
+
+tech_stack:
+  primary: "Python, FastAPI"
+  baseline_deps:
+  - name: "python"
+    version: ">=3.12"
+    purpose: "Python runtime"
+  - name: "fastapi"
+    version: ">=0.125.0"
+    purpose: "Python web framework"
+  - name: "uvicorn"
+    version: ">=0.40.0"
+    purpose: "ASGI server (required runtime)"
+  references:
+  - "https://docs.python.org/3/"
+  - "https://pypi.org/project/python/"
+  - "https://fastapi.tiangolo.com"
+  - "https://pypi.org/project/fastapi/"
+  - "https://www.uvicorn.org"
+  - "https://pypi.org/project/uvicorn/"
+
+validation:
+  exit_criteria:
+  - All documented endpoints implemented with request validation and standardized error responses.
+  - Authentication and authorization enforced on protected routes.
+  - Successful upsert and search round-trip with the vector store using sample data.
+  - Database query and transaction flow validated with parameterized inputs and timeouts.
+  - Status file updated with component completion
+  smoke_tests:
+  - Start server with uvicorn and verify GET /health returns 200 and { "status": "ok" }.
+  - Call POST /v1/embeddings/upsert with a small vector and confirm { ok: true, upserted: 1 } using a test stub.
+  - Execute POST /v1/queries/run with "SELECT 1" and verify { ok: true, rows: [...] } or equivalent.
+  - Request an unknown route and confirm 404 with standardized error payload and requestId.
+  integration_checks:
+  - Web App → Backend: Validate Authorization header handling, pagination query params, and 429 behavior under load.
+  - Backend → Vector Store: Validate vector length, namespace scoping, topK bounds; verify retry/backoff on 5xx.
+  - Backend → Database: Validate SQL parameter binding, transaction rollback on error, and query timeout enforcement.
+
+api_style: "REST"
+endpoint_patterns:
+- method: GET
+  path: /health
+  auth: none
+  description: Liveness probe; returns service status.
+- method: POST
+  path: /v1/embeddings/upsert
+  auth: service
+  description: Upsert one or more embeddings with optional metadata and namespace.
+- method: POST
+  path: /v1/embeddings/search
+  auth: user
+  description: Similarity search returning topK matches for a provided vector or id.
+- method: POST
+  path: /v1/queries/run
+  auth: service
+  description: Execute a parameterized read-only SQL query and return rows.
+- method: GET
+  path: /v1/items/{id}
+  auth: user
+  description: Fetch a single item by id from the database.
+- method: POST
+  path: /v1/items
+  auth: user
+  description: Create a new item with validated schema; returns created resource id.
+
+error_handling:
+  format: '{ error: { code: string, message: string, details?: object, requestId: string } }'
+  mapping:
+    400: BAD_REQUEST
+    401: UNAUTHORIZED
+    403: FORBIDDEN
+    404: NOT_FOUND
+    409: CONFLICT
+    422: UNPROCESSABLE_ENTITY
+    429: TOO_MANY_REQUESTS
+    500: INTERNAL_SERVER_ERROR
+  notes:
+  - requestId is echoed from X-Request-Id header or generated per request.
+  - details may include field validation issues, upstream service identifiers, or rate limit metadata.

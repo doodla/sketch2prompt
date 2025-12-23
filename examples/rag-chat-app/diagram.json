@@ -1,0 +1,105 @@
+{
+  "version": "1.0",
+  "createdAt": "2025-12-23T05:11:07.930Z",
+  "nodes": [
+    {
+      "id": "node_YT9BDlvVE1",
+      "type": "frontend",
+      "position": {
+        "x": 150,
+        "y": 100
+      },
+      "data": {
+        "label": "Web App",
+        "type": "frontend",
+        "meta": {
+          "techStack": [
+            "React (Vite)"
+          ]
+        }
+      }
+    },
+    {
+      "id": "node_IGpBRDK8v5",
+      "type": "backend",
+      "position": {
+        "x": 150,
+        "y": 300
+      },
+      "data": {
+        "label": "Backend",
+        "type": "backend",
+        "meta": {
+          "techStack": [
+            "Python",
+            "FastAPI"
+          ]
+        }
+      }
+    },
+    {
+      "id": "node_xlpUZBm02F",
+      "type": "storage",
+      "position": {
+        "x": 150,
+        "y": 500
+      },
+      "data": {
+        "label": "Database",
+        "type": "storage",
+        "meta": {
+          "techStack": [
+            "Supabase"
+          ]
+        }
+      }
+    },
+    {
+      "id": "node_sicFMoQ5zO",
+      "type": "storage",
+      "position": {
+        "x": 430,
+        "y": 500
+      },
+      "data": {
+        "label": "Vector Store",
+        "type": "storage",
+        "meta": {
+          "techStack": []
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_9u3ok7VGQ9",
+      "source": "node_YT9BDlvVE1",
+      "target": "node_IGpBRDK8v5",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "data": {
+        "label": "API calls"
+      }
+    },
+    {
+      "id": "edge_g3PnBaRwdB",
+      "source": "node_IGpBRDK8v5",
+      "target": "node_sicFMoQ5zO",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "data": {
+        "label": "embeddings"
+      }
+    },
+    {
+      "id": "edge_--WnEfd0No",
+      "source": "node_IGpBRDK8v5",
+      "target": "node_xlpUZBm02F",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "data": {
+        "label": "queries"
+      }
+    }
+  ]
+}

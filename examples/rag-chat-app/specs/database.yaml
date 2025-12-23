@@ -1,0 +1,118 @@
+spec_version: "1.0"
+component_id: "node_xlpUZBm02F"
+name: "Database"
+type: "storage"
+description: |
+  Centralized data storage for the AI coding assistant backed by Supabase (Postgres + APIs). 
+  Provides secure, queryable persistence for users, projects, code artifacts, sessions, and audit trails with Row Level Security (RLS) and structured access from the Backend.
+responsibilities:
+  - Persist core domain data (users, workspaces, projects, repositories, files, sessions, messages, tool runs, audit logs)
+  - Expose typed, parameterized CRUD and RPC operations via Supabase client with strict RLS enforcement
+  - Manage relational integrity, migrations, indexes, and constraints for consistent query performance
+  - Provide observability hooks (logs, metrics) and error surfaces for the Backend to detect and recover from failures
+  - Implement backup, retention, and restore procedures to protect against data loss
+anti_responsibilities:
+  - NEVER bypass RLS — security must be enforced at the database layer for all requests
+  - NEVER execute raw SQL directly from user input — prevents SQL injection and privilege escalation
+  - NEVER store secrets or access tokens in public tables — sensitive data must be encrypted and access-restricted
+  - NEVER expose internal schema changes without migrations — ensures predictable deploys and reproducibility
+  - NEVER disable backups or reduce retention without approval — safeguards against irreversible data loss
+
+integration_points:
+  - component: Backend
+    direction: inbound
+    purpose: Execute parameterized CRUD queries and RPCs against Supabase Postgres on behalf of authenticated users.
+    contract:
+      request: |
+        {
+          op: "select" | "insert" | "update" | "delete" | "rpc",
+          table?: string,                 // required for CRUD
+          schema?: "public",
+          filters?: Record<string, unknown>, // equality and simple operators; server-side parameterized
+          values?: Record<string, unknown> | Record<string, unknown>[], // insert/update payloads
+          rpc?: { fn: string, args?: Record<string, unknown> }, // for stored procedures
+          options?: {
+            limit?: number,
+            offset?: number,
+            order?: { column: string, ascending: boolean },
+            returning?: "minimal" | "representation",
+            count?: "exact" | "planned" | "estimated"
+          },
+          auth: { userId: string, role: "anon" | "authenticated" | "service" } // propagated JWT/session context
+        }
+      response: |
+        {
+          ok: boolean,
+          data?: unknown | unknown[],
+          error?: { message: string, code?: string, details?: unknown, hint?: string },
+          count?: number,
+          page?: { limit?: number, offset?: number },
+          elapsed_ms?: number
+        }
+
+tech_stack:
+  primary: "Supabase"
+  baseline_deps:
+    - name: "@supabase/supabase-js"
+      version: "^2.89.0"
+      purpose: "Supabase client"
+  references:
+    - "https://supabase.com/docs"
+    - "https://www.npmjs.com/package/@supabase/supabase-js"
+
+validation:
+  exit_criteria:
+    - Supabase project initialized with required schemas, RLS policies, and seed data
+    - Environment variables configured (SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY) and stored securely
+    - Baseline indexes and constraints applied; query plans validated for P95 latency targets
+    - Automated backups enabled and documented with tested restore procedure
+    - Integration tests pass for CRUD and RPC paths with RLS enforced
+    - Status file updated with component completion
+  smoke_tests:
+    - Initialize supabase-js client using anon key and verify a simple public "health" RPC returns { ok: true }
+    - Using service role key, create/select/update/delete a test record in a sandbox table; verify constraints and indexes present
+    - Attempt unauthorized select as anon on restricted table; expect error code "PGRST301" or equivalent RLS denial
+  integration_checks:
+    - Backend can perform paginated select with filters; response contains data array and count when requested
+    - Backend insert/update returns representation when requested and respects RLS (fails for unauthorized users)
+    - Backend RPC invocation succeeds with valid args and enforced permissions; returns typed payload
+    - Error propagation includes standardized code and message for retry/backoff decisions
+    - Observability: query timing/elapsed_ms present and logged by Backend
+
+schema_notes: |
+  Core entities and relationships (public schema):
+  - users (id PK, email UNIQUE, created_at) — mirrored to auth.users; app-specific profile table references auth identity
+  - workspaces (id PK, owner_id FK -> users.id)
+  - projects (id PK, workspace_id FK -> workspaces.id, name, visibility, created_at)
+  - repositories (id PK, project_id FK -> projects.id, provider, repo_slug, default_branch)
+  - files (id PK, repository_id FK -> repositories.id, path, sha, size, language, content_ref, updated_at)
+  - code_snippets (id PK, file_id FK -> files.id, range_start, range_end, embedding_ref, metadata JSONB)
+  - chat_sessions (id PK, project_id FK -> projects.id, created_by FK -> users.id, status, created_at)
+  - messages (id PK, session_id FK -> chat_sessions.id, role, content, tool_name NULLABLE, created_at)
+  - tool_invocations (id PK, session_id FK -> chat_sessions.id, tool_name, input JSONB, output JSONB, status, latency_ms)
+  - audit_logs (id PK, actor_id FK -> users.id, event, target_type, target_id, metadata JSONB, created_at)
+  Row Level Security:
+  - users access scoped to self; workspace/project data restricted to members; service role bypasses RLS for maintenance only.
+  - Policies grant read/write based on membership tables (workspace_members, project_members) and role claims within JWT.
+  Storage (optional):
+  - Use Supabase Storage buckets for large artifacts (e.g., file content blobs), referenced by content_ref.
+
+backup_strategy: |
+  - Supabase automated daily backups enabled with 14–30 day retention (configured per environment).
+  - Point-in-Time Recovery (PITR) enabled for production where available; target RPO <= 15 minutes.
+  - Weekly verified restore drill to a staging project; checksum comparison for critical tables (projects, repositories, messages).
+  - Logical exports (pg_dump) of schema and seed data stored in encrypted object storage; keys managed via KMS.
+  - Document runbook for incident restore, including service role rotation and cache invalidation steps.
+
+indexing_strategy: |
+  - B-Tree indexes on all FK columns and frequently filtered columns:
+    - projects.workspace_id, repositories.project_id, files.repository_id, messages.session_id, tool_invocations.session_id
+  - Time-based indexes for recent activity queries: created_at/updated_at on messages, tool_invocations, files
+  - Composite indexes for common patterns:
+    - files(repository_id, path)
+    - code_snippets(file_id, range_start)
+    - messages(session_id, created_at DESC) for ordered retrieval
+  - GIN indexes on JSONB metadata where applicable (code_snippets.metadata, audit_logs.metadata)
+  - Full-text search indexes (tsvector) for messages.content and files content metadata when needed
+  - Partial indexes for soft-deleted or visibility-scoped rows to keep hot-path queries lean
+  - Regular index health checks (pg_stat_user_indexes) and VACUUM/ANALYZE routines aligned with write volume
