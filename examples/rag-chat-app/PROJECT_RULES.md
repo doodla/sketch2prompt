@@ -1,225 +1,196 @@
-# RAG Chat App - System Rules
+# rag-chat-app - System Rules
 
-> **Load this file FIRST** before any component specs.
-> Component specs in `specs/*.md` extend these rules.
+## 1. System Overview
+- Project: rag-chat-app
+- Type: Full-stack application
+- Stack: React (Vite), Python 3.12+, FastAPI, Supabase, Pinecone, OpenAI; runtime via uvicorn; verified packages: react@^19.2.3, vite@^7.3.0, python@>=3.12, fastapi@>=0.125.0, uvicorn@>=0.40.0, supabase@>=2.27.0, pinecone@^6.0.0, openai@>=2.14.0
 
-## System Overview
+This system provides a Retrieval-Augmented Generation (RAG) chat interface. Users submit queries via a web app, the backend retrieves relevant context from Pinecone and Supabase, then calls OpenAI to generate grounded responses.
 
-**Project**: RAG Chat App
-**Type**: Full-stack web application
-**Stack**: React/Vue/similar frontend + Node.js/Python/similar backend + Database, Vector Store
+Boundaries
+- This system IS:
+  - A single-repo monolithic app with a React UI and a FastAPI backend.
+  - A RAG pipeline: embedding storage in Pinecone, metadata and chat history in Supabase, and LLM generation via OpenAI.
+  - An API-first design with the frontend consuming backend endpoints.
 
-# AI: Add 2-3 sentence description based on components and their relationships.
+- This system IS NOT:
+  - A microservices platform, event-driven system, or message-queue-based architecture.
+  - A general document ingestion pipeline or ETL framework (ingestion is minimal and scoped).
+  - A real-time streaming/voice system or an offline batch analytics platform.
+  - A full identity/authorization provider; it uses standard auth from Supabase or simple JWT where required.
 
-### Boundaries
-
-This system IS:
-- A user-facing web application with interactive UI
-- An API service handling business logic and data access
-- A system with persistent data storage
-- # AI: Add more explicit inclusions based on component analysis
-
-This system IS NOT:
-- A background job processing system (synchronous only)
-- A system with extensive third-party integrations
-- # AI: Add more explicit exclusions to prevent scope creep
-
----
-
-## Component Registry
-
+## 2. Component Registry
 | ID | Component | Type | Spec File | Status |
-|----|-----------|------|-----------|--------|
+|---|---|---|---|---|
 | node_YT9BDlvVE1 | Web App | frontend | `specs/web-app.md` | active |
 | node_IGpBRDK8v5 | Backend | backend | `specs/backend.md` | active |
 | node_xlpUZBm02F | Database | storage | `specs/database.md` | active |
 | node_sicFMoQ5zO | Vector Store | storage | `specs/vector-store.md` | active |
+| node_LLM_API_001 | LLM API | external | `specs/llm-api.md` | active |
 
-### Loading Instructions
+Loading Instructions
+- Load component specs only when working on that component. Do not preload all specs.
 
-Load component specs **only when working on that component**. Do not preload all specs.
+## 3. Architecture Constraints
+ALWAYS (Required)
+- Validate all inputs at system boundaries (HTTP requests, DB writes, vector store ops, and LLM prompt assembly).
+- Use environment variables for configuration (never hardcode secrets). Provide safe defaults and fail fast when required variables are missing.
+- Log structured errors (timestamp, level, message, context). Capture correlation IDs per request for traceability.
+- Return consistent API responses with typed error envelopes and HTTP status codes (4xx client issues, 5xx server issues).
+- Enforce least privilege on keys and roles (Supabase service vs anon keys; Pinecone/OpenAI keys).
+- Implement rate limiting and basic abuse protections where applicable (per-IP or per-user) at the backend.
 
-Cross-reference format: `[component-id]` (e.g., [node_YT9BDlvVE1] references Web App)
+NEVER (Forbidden)
+- Store secrets in code or version control (no keys in source, logs, or client bundle).
+- Trust client-side validation alone—always revalidate on the server.
+- Add enterprise patterns without explicit request (message queues, microservices, CQRS).
+- Install dependencies without checking stdlib/existing deps first or verifying maintenance and security.
+- Expose raw LLM responses without safety filters/guardrails when needed (e.g., prompt injection checks).
+- Disable type checks, linters, or tests to “unblock” builds.
 
----
+PREFER (Encouraged)
+- Simplicity over abstraction — delay complexity until scaling demands it.
+- Monolith over distributed services — simpler deployment, fewer moving parts.
+- Explicit schemas over implicit contracts — OpenAPI/JSON Schemas reduce drift.
+- Dependency-free utilities over new packages — minimize attack surface and bundle size.
+- Configuration via env vars over code constants — enables environment parity and secure rotation.
 
-## Architecture Constraints
+## 4. Code Standards
+Naming Conventions (ENFORCED)
+- TypeScript (frontend):
+  - Files: utils/helpers as kebab-case.ts; React components as PascalCase.tsx; hooks as use-xxx.ts.
+  - Functions/variables: camelCase; Components: PascalCase; Constants: SCREAMING_SNAKE_CASE.
+- Python (backend):
+  - Files: snake_case.py; Modules/packages: snake_case; Classes: PascalCase; Functions/vars: snake_case; Constants: SCREAMING_SNAKE_CASE.
 
-### ALWAYS (Required)
+Modularity Rules (HARD LIMITS)
+| Rule | Limit |
+|---|---|
+| Function length | Max 50 lines |
+| File length | Max 300 lines (hard limit 500) |
+| Nesting depth | Max 3 levels |
+| Parameters per function | Max 4 |
 
-- Validate all inputs at system boundaries (API endpoints, form submissions)
-- Use environment variables for all configuration (never hardcode secrets)
-- Log structured data for all errors (timestamp, level, message, context)
-- Sanitize all user inputs to prevent XSS attacks
-- Use HTTPS only for API communications
-- Validate ALL inputs with schema validation library
-- Use parameterized queries to prevent SQL injection
-- Encrypt sensitive columns at rest
-- Use minimal privilege database users
-- # AI: Add project-specific constraints based on domain requirements
+File Organization
+- Root
+  - specs/ (component specs)
+  - apps/
+    - web/ (React + Vite)
+      - src/
+        - app/ (routing, providers)
+        - components/ (UI components, PascalCase)
+        - features/ (feature slices: chat, auth, settings)
+        - hooks/ (reusable hooks)
+        - lib/ (utilities, API clients, schemas)
+        - styles/ (global styles)
+        - types/ (frontend-only TS types)
+      - public/
+      - index.html
+      - vite.config.ts
+    - backend/ (FastAPI)
+      - app/
+        - api/ (routers, DTOs)
+        - core/ (config, logging, security)
+        - services/ (business logic: rag, llm, embeddings)
+        - repositories/ (data access: supabase, pinecone)
+        - schemas/ (pydantic models)
+        - workers/ (optional background tasks)
+        - utils/ (helpers)
+        - main.py (FastAPI entry)
+      - tests/
+    - shared/ (contracts shared across FE/BE)
+      - schemas/ (JSON Schema/OpenAPI fragments)
+      - messages/ (prompt templates, system messages)
+      - types/ (generated TS from OpenAPI; Python models referencing same schema)
+  - infra/ (optional deployment, docker, CI config)
+  - .env.example (document required env vars)
 
-### NEVER (Forbidden)
+Required Patterns
+- TypeScript:
+  - Enable strict mode; no use of any (use unknown or generics with narrowing).
+  - No enums — prefer union string literals or as const objects for tree-shaking and safety.
+  - Explicit return types for exported functions and hooks.
+  - Prefer React Query/fetch wrappers with typed responses and error handling.
+- Python:
+  - Type hints required; mypy/pyright or equivalent checks enforced.
+  - Docstrings on all public functions/classes; include type info and behavior notes.
+  - Zero warnings policy in CI (flake8/ruff, mypy, pytest).
+  - Pydantic models for request/response schemas; validate at router layer.
+  - Async-first FastAPI endpoints where I/O-bound.
 
-- Store secrets in code or version control
-- Trust client-side validation alone (always re-validate server-side)
-- Expose internal error details to clients (log internally, return safe messages)
-- Add enterprise patterns without explicit user request (message queues, microservices, CQRS)
-- Install dependencies without checking if stdlib or existing deps solve the problem
-- Use 'any' type in TypeScript (use 'unknown' + type guards)
-- Make direct database connections from frontend
-- # AI: Add project-specific anti-patterns to avoid
+Dependencies Policy
+- Search the codebase and stdlib before adding a dependency; avoid duplicates.
+- Use verified packages as specified:
+  - react@^19.2.3, vite@^7.3.0, python@>=3.12, fastapi@>=0.125.0, uvicorn@>=0.40.0, supabase@>=2.27.0, pinecone@^6.0.0, openai@>=2.14.0.
+- Verify maintenance (recent commits, issues) and security posture before adoption.
+- Check frontend bundle impact; prefer ESM and tree-shakeable packages.
+- Pin versions with care; use caret/compatible ranges only where safe; NEVER install from GitHub main/HEAD.
+- Remove unused packages promptly; justify any transitive peer dependencies.
 
-### PREFER (Encouraged)
-
-- Simplicity over abstraction — delay complexity until scaling demands it
-- Composition over inheritance — easier to test and modify
-- Named exports over default exports — better refactoring support
-- Early returns over nested conditionals — clearer control flow
-- Explicit dependencies over global imports — aids testing
-- Three similar lines over one premature helper — wait for patterns to emerge
-- # AI: Add project-specific best practices
-
----
-
-## Code Standards
-
-### Naming Conventions (ENFORCED)
-
-**TypeScript/JavaScript:**
-- Files: `kebab-case.ts` for utilities, `PascalCase.tsx` for components
-- Functions: `camelCase` with verb prefix (`getUserById`, `validateEmail`)
-- Constants: `SCREAMING_SNAKE_CASE` for true constants
-- Types/Interfaces: `PascalCase` (`UserProfile`, `CreateOrderInput`)
-- No abbreviations except: `id`, `url`, `api`, `db`
-
-**Python (PEP 8 STRICT):**
-- Files: `snake_case.py`
-- Functions/Variables: `snake_case`
-- Classes: `PascalCase`
-- Constants: `SCREAMING_SNAKE_CASE`
-- Private: single underscore prefix `_internal_method`
-
-
-### Modularity Rules (HARD LIMITS)
-
-| Metric | Limit | Action When Exceeded |
-|--------|-------|---------------------|
-| Function length | **50 lines max** | Extract helper functions |
-| File length | **300 lines** (hard: 500) | Split into modules |
-| Nesting depth | **3 levels max** | Use early returns, extract functions |
-| Parameters | **4 max** | Use options object |
-| Cyclomatic complexity | **10 max** | Simplify logic, extract branches |
-
-### File Organization
-
-```
-/src
-  /app          - Application shell, routing, providers
-  /components   - Reusable UI components (no business logic)
-  /features     - Feature modules (co-located components + hooks + utils)
-  /services     - API clients, external service integrations
-  /stores       - State management (Zustand/Redux slices)
-  /types        - Shared TypeScript types
-  /utils        - Pure utility functions
-  /server       - Backend code (if monorepo)
-```
-
-
-### Required Patterns
-
-**Frontend:**
-- Components: Functional only, no class components
-- State: Lift state up or use stores, no prop drilling >2 levels
-- Effects: Cleanup subscriptions, cancel pending requests
-- Error handling: Error boundaries at route level minimum
-
-**Backend:**
-- Controllers: Routing only, no business logic
-- Services: All business logic, injectable dependencies
-- Validation: At API boundary using schema validation (Zod, Pydantic)
-- Errors: Structured error responses with codes and messages
-
-**Python Specific:**
-- Type hints: Required on all function signatures
-- Docstrings: Required on public functions (Google style)
-- Imports: stdlib → third-party → local (isort)
-- Linting: ruff or flake8+black, zero warnings policy
-
-**TypeScript Specific:**
-- Strict mode: Enabled, no exceptions
-- No `any`: Use `unknown` and narrow, or define proper types
-- No enums: Use `as const` objects instead
-- Explicit returns: All functions must declare return type
-
-
-### Dependencies Policy
-
-**Before adding ANY dependency:**
-1. Check if functionality exists in stdlib or current deps
-2. Verify package is actively maintained (commits in last 6 months)
-3. Check bundle size impact (use bundlephobia.com)
-4. Verify TypeScript types exist (@types/* or built-in)
-5. Review security advisories (npm audit, snyk)
-
-**NEVER:**
-- Install from GitHub main branch
-- Use packages with known vulnerabilities
-- Add deps for trivial functionality (<20 lines of code)
-
----
-
-## Build Order
-
+## 5. Build Order
 Implementation sequence based on dependency graph:
 
 ### Phase 1: Foundation
-Project setup, tooling, and dependencies
+- [ ] [node_xlpUZBm02F] Database — Schema and data layer first (everything depends on data)
+- [ ] [node_sicFMoQ5zO] Vector Store — Schema and data layer first (everything depends on data)
 
-### Phase 2: Storage
-- [ ] [node_xlpUZBm02F] Database — Schema and data models first (everything depends on data)
-- [ ] [node_sicFMoQ5zO] Vector Store — Schema and data models first (everything depends on data)
+### Phase 2: Core Features
+- [ ] [node_IGpBRDK8v5] Backend — Business logic and data access
+- [ ] [node_YT9BDlvVE1] Web App — UI consuming the backend services
 
-### Phase 4: Backend
-- [ ] [node_IGpBRDK8v5] Backend — Business logic and API endpoints
+### Phase 3: Integration
+- [ ] [node_LLM_API_001] LLM API — External integrations (can be added incrementally)
 
-### Phase 5: Frontend
-- [ ] [node_YT9BDlvVE1] Web App — UI consuming the backend API
-
-### Phase 5: Polish
-- [ ] Error handling standardization
-- [ ] Performance optimization
-- [ ] Monitoring and logging
-- [ ] # AI: Add project-specific polish tasks
-
----
-
-## Integration Rules
-
+## 6. Integration Rules
 ### Communication Patterns
 
 | From | To | Pattern | Notes |
-|------|----|---------|-------|
-| Web App | Backend | HTTP REST/GraphQL | API calls |
-| Backend | Vector Store | ORM/Query builder | embeddings |
-| Backend | Database | ORM/Query builder | queries |
+|------|----|---------| ------|
+| Web App | Backend | HTTP/REST API | API calls |
+| Backend | Vector Store | ORM/Query Builder | embeddings |
+| Backend | Database | ORM/Query Builder | queries |
+| Backend | LLM API | API Client/SDK | prompts |
 
 ### Shared Contracts
+API response types and shared data structures should be defined in a central types location. Both frontend and backend should reference these types.
 
-Define shared types and API contracts in a central location (e.g., `/src/types/`).
+Recommended shared contracts:
+- OpenAPI spec generated from FastAPI as the source of truth.
+- JSON Schemas for core entities (Message, Session, DocumentMetadata, RetrievalResult).
+- TS types auto-generated from OpenAPI into apps/web/src/types; Python pydantic models in apps/backend/app/schemas align with the same schema.
+- Version type changes (v1 -> v1.1) with backward compatibility where possible.
 
 ### Forbidden Integrations
+- Frontend components MUST NOT directly access storage — all data through backend APIs
+- External services MUST NOT be called directly from frontend — proxy through backend for security
 
-- Frontend MUST NOT directly access storage
-- External services MUST be proxied through backend
+Additional constraints:
+- Do not embed service keys in frontend bundles; use backend-proxied tokens when absolutely necessary.
+- Avoid cross-component tight coupling; interact through explicit interfaces and DTOs.
 
----
+Environment and configuration (examples; do not hardcode):
+- REQUIRED: OPENAI_API_KEY, PINECONE_API_KEY, SUPABASE_URL, SUPABASE_ANON_KEY or SERVICE_ROLE_KEY, DATABASE_URL (if used), RAG_INDEX_NAME, APP_BASE_URL, BACKEND_BASE_URL.
+- Use separate .env files per environment; validate presence at startup and fail fast.
 
-## Status Tracking
+Security and privacy:
+- Sanitize prompts and retrieved content (strip PII where required).
+- Implement prompt injection mitigations (e.g., system instructions, context delimiters).
+- Enforce CORS only for known origins; default deny.
+- Apply auth to session/chat endpoints when user accounts are present.
 
-Track implementation progress in a status file (e.g., `STATUS.md`).
+Observability:
+- Structured logs with request ID; capture latency for retrieval, LLM calls, and total response time.
+- Emit metrics for cache hits, token usage, error rates, and timeouts.
+- Centralize error handling with consistent error surface to clients.
 
-See `AGENT_PROTOCOL.md` for:
-- Required status tracking format
-- Workflow guidance (Index → Plan → Implement → Verify)
-- Scope discipline rules
-- Library policy
+Performance:
+- Cache embeddings for identical content; deduplicate documents by hash.
+- Batch vector operations where supported; set appropriate top_k and filters.
+- Use streaming responses from OpenAI to improve perceived latency and stream to frontend when practical.
+
+ARCHITECTURE PHILOSOPHY (CRITICAL):
+- Build MINIMALLY — only add what's needed NOW, scale when actually necessary
+- NO enterprise patterns (message queues, microservices, CQRS) unless user explicitly requested them
+- Start with the simplest working solution (SQLite before PostgreSQL clusters, monolith before microservices)
+- Avoid premature abstraction — three similar lines is better than one premature helper
+- If the user didn't specify a technology choice, prefer lightweight defaults over enterprise options

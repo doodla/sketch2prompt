@@ -3,22 +3,28 @@
 ## Tech Stack
 Python, FastAPI
 
+## Description
+Backend RAG pipeline that receives user queries, retrieves relevant context from storage, and orchestrates calls to the LLM. Exposes REST endpoints for query handling and health checks, performing retrieval-augmented generation with safe, observable execution.
+
 ## Responsibilities
-- Validate all incoming request payloads
-- Enforce authentication and authorization rules
-- Execute business logic and data transformations
-- Return consistent, well-structured API responses
+- Expose REST endpoints for query processing, health, and readiness
+- Retrieve context from the vector store and database, then assemble prompts
+- Call the LLM API with retries, timeouts, and streaming support as applicable
+- Enforce authentication, input validation, and rate limiting middleware
+- Log requests/metrics and standardize error responses
 
 ## Anti-Responsibilities
-- NEVER trust client-provided data without validation — Clients can send any data, including malicious payloads
-- NEVER expose internal error details to clients — Stack traces reveal implementation details useful for attacks
-- NEVER store secrets in code or version control — Secrets in code get leaked through repos, logs, error messages
-- NEVER trust client-provided IDs for authorization — Users can manipulate IDs to access others' data
+- NEVER expose direct database or vector store access to clients — security and abstraction concerns
+- NEVER store raw API keys or secrets in source — use environment or secret manager
+- NEVER perform model training or fine-tuning — out of scope for this service
+- NEVER serve frontend assets — handled by the Web App
+- NEVER bypass input validation — prevents injection and malformed queries
 
 ## Integrates With
-- Web App (inbound) via HTTP REST/GraphQL
-- Database (outbound) via ORM/Query builder
-- Vector Store (outbound) via ORM/Query builder
+- Web App (receives from) via REST/JSON API
+- Vector Store (sends to) via embeddings API (search/write)
+- Database (sends to) via parameterized SQL queries
+- LLM API (sends to) via HTTP/JSON prompts
 
 ## Dependencies
 | Package | Version | Purpose |
@@ -28,14 +34,16 @@ Python, FastAPI
 | uvicorn | >=0.40.0 | ASGI server (required runtime) |
 
 ## API Notes
-- Style: REST (or TBD)
-- Auth: TBD (middleware)
-- Error Format: `{ error: string, code: number }`
+- Style: REST
+- Auth: Authorization: Bearer <token> via FastAPI dependency/middleware
+- Errors: `{ error, code }`
 
 ## Validation
-- [ ] All endpoints return correct status codes
-- [ ] Auth middleware functional
-- [ ] Error responses match format
+- [ ] /query endpoint executes retrieval + LLM call and returns answer with sources
+- [ ] /health and /ready endpoints implemented
+- [ ] Timeouts, retries, and circuit-breaking for external calls
+- [ ] Input validation and standardized `{ error, code }` responses
+- [ ] Observability: structured logs and basic latency metrics
 - [ ] STATUS.md updated
 
 </spec>

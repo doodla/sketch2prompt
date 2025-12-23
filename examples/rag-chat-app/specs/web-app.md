@@ -3,20 +3,25 @@
 ## Tech Stack
 React (Vite)
 
+## Description
+A React-based web interface that delivers a seamless chat experience for user queries and AI-generated responses. Built with Vite for rapid development and optimized production builds. Focused on responsive UI, streaming feedback, and robust error handling.
+
 ## Responsibilities
-- Render user interface components and pages
-- Handle user interactions and form submissions
-- Manage client-side state and routing
-- Communicate with backend APIs for data
+- Render chat transcript with user/assistant roles, timestamps, and loading states
+- Handle message composition, submission, streaming updates, and retries
+- Invoke backend APIs with proper headers, timeouts, and error handling
+- Maintain client-side session state and lightweight persistence (e.g., local storage)
+- Ensure responsive layout, keyboard navigation, and accessible interactions
 
 ## Anti-Responsibilities
-- NEVER store sensitive data in localStorage or sessionStorage — Client storage is accessible to any script on the page, including XSS attacks
-- NEVER trust client-side validation alone — Client code can be bypassed or modified by users
-- NEVER make direct database connections — Exposes credentials and bypasses business logic
-- NEVER implement business logic in UI components — Makes logic hard to test and leads to duplication
+- NEVER implement model inference — handled by backend services
+- NEVER store PII beyond session scope — privacy and compliance
+- NEVER expose API keys in client bundle — security risk
+- NEVER bypass backend for data mutations — integrity and auditability
+- NEVER deviate from design tokens — consistency and theming
 
 ## Integrates With
-- Backend (outbound) via HTTP REST/GraphQL
+- Backend (sends to) via API calls
 
 ## Dependencies
 | Package | Version | Purpose |
@@ -25,14 +30,12 @@ React (Vite)
 | vite | ^7.3.0 | Build tool |
 
 ## Frontend Notes
-- Routing: TBD
-- State Management: TBD
-- Accessibility: WCAG 2.1 AA compliance
+- Routing: Single-page app; minimal client-side routing using History API or hash segments
+- State: React hooks (useState/useReducer/useContext); derive UI state from API responses
+- A11y: WCAG 2.1 AA
 
 ## Validation
-- [ ] Renders without console errors
-- [ ] Responsive at 320px, 768px, 1024px
-- [ ] All user flows tested
+- [ ] Chat UI supports send, streaming receive, error states, and retry; connects to backend API
 - [ ] STATUS.md updated
 
 </spec>

@@ -1,18 +1,19 @@
 {
   "version": "1.0",
-  "createdAt": "2025-12-23T19:18:18.147Z",
+  "createdAt": "2025-12-23T20:30:08.367Z",
   "nodes": [
     {
       "id": "node_YT9BDlvVE1",
       "type": "frontend",
       "position": {
-        "x": 150,
-        "y": 100
+        "x": 144,
+        "y": -32
       },
       "data": {
         "label": "Web App",
         "type": "frontend",
         "meta": {
+          "description": "Chat interface for user queries and AI responses",
           "techStack": [
             "React (Vite)"
           ]
@@ -23,13 +24,14 @@
       "id": "node_IGpBRDK8v5",
       "type": "backend",
       "position": {
-        "x": 150,
-        "y": 300
+        "x": 144,
+        "y": 352
       },
       "data": {
         "label": "Backend",
         "type": "backend",
         "meta": {
+          "description": "RAG pipeline: receives queries, retrieves context, calls LLM",
           "techStack": [
             "Python",
             "FastAPI"
@@ -41,13 +43,14 @@
       "id": "node_xlpUZBm02F",
       "type": "storage",
       "position": {
-        "x": 150,
-        "y": 500
+        "x": -208,
+        "y": 720
       },
       "data": {
         "label": "Database",
         "type": "storage",
         "meta": {
+          "description": "Stores chat history, user sessions, document metadata",
           "techStack": [
             "Supabase"
           ]
@@ -58,14 +61,35 @@
       "id": "node_sicFMoQ5zO",
       "type": "storage",
       "position": {
-        "x": 430,
-        "y": 500
+        "x": 576,
+        "y": 720
       },
       "data": {
         "label": "Vector Store",
         "type": "storage",
         "meta": {
-          "techStack": []
+          "description": "Stores document embeddings for semantic search",
+          "techStack": [
+            "Pinecone"
+          ]
+        }
+      }
+    },
+    {
+      "id": "node_LLM_API_001",
+      "type": "external",
+      "position": {
+        "x": 784,
+        "y": 176
+      },
+      "data": {
+        "label": "LLM API",
+        "type": "external",
+        "meta": {
+          "description": "Generates responses from retrieved context",
+          "techStack": [
+            "OpenAI"
+          ]
         }
       }
     }
@@ -99,6 +123,16 @@
       "targetHandle": null,
       "data": {
         "label": "queries"
+      }
+    },
+    {
+      "id": "edge_backend_llm",
+      "source": "node_IGpBRDK8v5",
+      "target": "node_LLM_API_001",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "data": {
+        "label": "prompts"
       }
     }
   ]

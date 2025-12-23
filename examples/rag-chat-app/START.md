@@ -1,4 +1,4 @@
-# RAG Chat App — Initialization Protocol
+# rag-chat-app — Initialization Protocol
 
 <system>
 You are initializing a new project from a Sketch2Prompt blueprint. This file defines your initialization sequence. Follow it exactly.
@@ -21,14 +21,15 @@ Do NOT load `specs/*.md` yet. Component specs are loaded only when actively impl
 ## Phase 1: Confirmation Gate
 
 <project_summary>
-Project: RAG Chat App
-Components: 4 (1 frontend, 1 backend, 2 storage)
-Tech Stack: FastAPI, Python, React (Vite), Supabase
+Project: rag-chat-app
+Components: 5 (1 frontend, 1 backend, 2 storage, 1 external)
+Tech Stack: FastAPI, OpenAI, Pinecone, Python, React (Vite), Supabase
 
 - Web App (frontend)
 - Backend (backend)
 - Database (storage)
 - Vector Store (storage)
+- LLM API (external)
 </project_summary>
 
 <constraints_summary>
@@ -41,7 +42,7 @@ Tech Stack: FastAPI, Python, React (Vite), Supabase
 
 Present the summary above, then ask:
 
-> "I've loaded the RAG Chat App blueprint. Before proceeding:
+> "I've loaded the rag-chat-app blueprint. Before proceeding:
 > 1. Does this component structure match your intent?
 > 2. Are the tech stack choices correct?
 > 3. Any constraints you want to adjust?
@@ -75,7 +76,7 @@ After user confirms, ask:
 Once user selects IDE, generate the appropriate instruction file using this structure:
 
 ```
-# RAG Chat App
+# rag-chat-app
 
 ## System Overview
 [Extract from PROJECT_RULES.md Section 1 - project type, stack, boundaries]
@@ -108,7 +109,7 @@ Adapt formatting to match IDE conventions (e.g., Cursor uses YAML-like rules).
 Create `STATUS.md` with initial state:
 
 ```markdown
-# RAG Chat App — Status
+# rag-chat-app — Status
 
 ## Current Phase
 Phase 1: Foundation
