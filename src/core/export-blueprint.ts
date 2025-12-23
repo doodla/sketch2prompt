@@ -102,14 +102,18 @@ export async function exportBlueprint(
       }
     }
 
-    // Generate START.md (always template-based - it's a bootstrap prompt)
-    const { generateStartMd } = await import('./template-generator')
+    // Generate START.md and README.md (always template-based)
+    const { generateStartMd, generateReadme } = await import('./template-generator')
     const startMd = generateStartMd(nodes, options.projectName)
+    const readme = generateReadme(options.projectName)
 
     // Create ZIP
     const zip = new JSZip()
 
-    // Add START.md (read this first)
+    // Add README.md (human quick-start)
+    zip.file('README.md', readme)
+
+    // Add START.md (LLM initialization protocol)
     zip.file('START.md', startMd)
 
     // Add PROJECT_RULES.md
@@ -199,14 +203,18 @@ export async function exportBlueprintStreaming(
       options.streamingCallbacks
     )
 
-    // Generate START.md (always template-based - it's a bootstrap prompt)
-    const { generateStartMd } = await import('./template-generator')
+    // Generate START.md and README.md (always template-based)
+    const { generateStartMd, generateReadme } = await import('./template-generator')
     const startMd = generateStartMd(nodes, options.projectName)
+    const readme = generateReadme(options.projectName)
 
     // Create ZIP from streaming result
     const zip = new JSZip()
 
-    // Add START.md (read this first)
+    // Add README.md (human quick-start)
+    zip.file('README.md', readme)
+
+    // Add START.md (LLM initialization protocol)
     zip.file('START.md', startMd)
 
     // Add PROJECT_RULES.md

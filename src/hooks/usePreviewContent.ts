@@ -4,6 +4,7 @@ import {
   generateAgentProtocolTemplate,
   generateComponentYamlTemplate,
   generateStartMd,
+  generateReadme,
 } from '../core/template-generator'
 import { exportJson } from '../core/export-json'
 import type { DiagramNode, DiagramEdge } from '../core/types'
@@ -24,17 +25,27 @@ export function usePreviewContent(
   return useMemo(() => {
     const files: PreviewFile[] = []
 
-    // 1. START.md (bootstrap - read first)
+    // 1. README.md (human quick-start)
+    const readme = generateReadme(projectName)
+    files.push({
+      name: 'README.md',
+      content: readme,
+      language: 'markdown',
+      size: getByteSize(readme),
+      description: 'Quick start guide for humans',
+    })
+
+    // 2. START.md (LLM initialization protocol)
     const startMd = generateStartMd(nodes, projectName)
     files.push({
       name: 'START.md',
       content: startMd,
       language: 'markdown',
       size: getByteSize(startMd),
-      description: 'Read first: confirms setup and guides IDE configuration',
+      description: 'Give this to your AI assistant first',
     })
 
-    // 2. PROJECT_RULES.md
+    // 3. PROJECT_RULES.md
     const projectRules = generateProjectRulesTemplate(nodes, edges, projectName)
     files.push({
       name: 'PROJECT_RULES.md',
