@@ -1,96 +1,153 @@
 # Agent Protocol
 
-## 1. Core Principle
-- This system operates under explicit rules. The agent must execute strictly within them.
-- Always read PROJECT_RULES.md fully before any work begins.
-- Load only the active component specification before implementation. Do not load or reason about inactive components until a status switch is recorded.
+## Core Principle
 
-## 2. Status Tracking (MANDATORY)
-- Status tracking is mandatory for every session and change.
-- Use a generic status file: STATUS.md.
-- Recommended structure:
-  - Current Phase
-  - Active Component
-  - Current Milestone
-  - Progress (what’s done since last update)
-  - Blockers (including external dependencies)
-  - Last Updated (UTC timestamp)
-- Rules:
-  - Create STATUS.md on the first task.
-  - Update after completing any feature or milestone.
-  - Update when switching the active component.
-  - Update immediately when blocked (note request, dependency, or decision needed).
-  - Read STATUS.md at the start of every session and align work accordingly.
+The system you are building already has rules. Execute within those rules — do not invent new architecture.
 
-## 3. Workflow Guidance
-- Index: Discover and index the repository, read PROJECT_RULES.md, and load only the active component spec. Record findings in STATUS.md.
-- Plan: Define milestones, acceptance criteria, and minimal design. Confirm alignment with project rules and constraints. Update STATUS.md.
-- Implement: Build incrementally with minimal complexity, validate at boundaries, and keep diffs small. Update STATUS.md after each milestone.
-- Verify: Run checks/tests, validate acceptance criteria, and document outcomes/next steps. Update STATUS.md with results and any follow-ups.
+Before ANY implementation:
+1. Read `PROJECT_RULES.md` to understand system boundaries
+2. Load ONLY the component spec you are currently implementing
+3. Do not load other specs unless resolving an integration contract
 
-## 4. Scope Discipline
-- ALWAYS:
-  - Validate inputs at system boundaries (API, CLI, queues, web forms).
-  - Use environment variables for secrets and configuration; document required variables.
-  - Update STATUS.md after every milestone and at phase transitions.
-  - Implement explicit error handling with clear messages and no sensitive leakage.
-  - Follow least-privilege principles for API keys and database access.
-  - Keep changes minimal and reversible; prefer small PRs/commits tied to milestones.
+---
 
-- NEVER:
-  - Store secrets in code, logs, or version control (including .env in VCS).
-  - Trust client-side validation alone; always re-validate on the server.
-  - Add enterprise patterns or heavy frameworks without explicit request.
-  - Introduce global mutable state for cross-cutting concerns.
-  - Exceed complexity limits (function/file size, nesting) to “get it done”.
-  - Bypass or forget STATUS.md updates for any reason.
+## Status Tracking (MANDATORY)
 
-- PREFER:
-  - Small, focused modules over large monoliths.
-  - Configuration over code for environment differences.
-  - Native/stdlib APIs over third-party packages.
-  - Plain functions and composition over classes and inheritance.
-  - Iterative delivery with clear acceptance criteria over big-bang releases.
+`STATUS.md` tracks current phase, milestone, and progress.
 
-## 5. Library Policy
-- Search before building: reuse existing utilities before writing new code.
-- Order of consideration:
-  1) Current codebase utilities and patterns
-  2) Existing project dependencies
-  3) New external packages (only if value > cost and security/privacy acceptable)
-- Appropriate use cases for established libraries:
-  - HTTP clients, data validation/schemas, auth/OAuth flows, database clients/ORMs, date/time/uuid, structured logging, testing frameworks, and concurrency utilities.
-- Custom code is acceptable when:
-  - Functionality is simple, the dependency would be heavy, or security/supply-chain risk outweighs benefits.
-  - Performance or footprint constraints demand bespoke solutions.
-- MINIMALISM MANDATE (NON-NEGOTIABLE):
-  - Start with the simplest architecture that could work.
-  - Add complexity ONLY when real scaling demands it and after measurement.
-  - No enterprise patterns without explicit user request.
-  - Prefer stdlib over library, library over framework, simple over clever.
-  - Three similar lines of code beats one premature abstraction.
-  - If in doubt, leave it out.
+**Update after every feature or milestone.** No exceptions.
 
-## 6. Code Standards
-- Stack Rules (detected: Python, TypeScript):
+```
+# Project Status
 
-| Stack      | Standards |
-|------------|-----------|
-| Python     | PEP 8 strict; snake_case for functions/variables; PascalCase for classes; 4-space indentation; max 88 chars per line; type hints required (annotations on functions, variables where meaningful); black-compatible formatting; explicit imports; no wildcard imports; f-strings preferred; docstrings for public functions/classes; raise explicit exceptions; avoid mutable default args. |
-| TypeScript | ESLint strict; no any (use generics/unknown/narrowing); no enums (use const objects/as const + union types); explicit return types for exported functions; 2-space indentation; strictNullChecks enabled; prefer readonly and immutability; no implicit any; narrow types via guards; avoid default exports in shared libs; path aliases documented; isolate side effects; prefer async/await with try/catch. |
+## Current Phase
+[Phase 1: Foundation | Phase 2: Core Features | Phase 3: Integration]
 
-- Modularity Rules (HARD LIMITS):
-  - Functions: max 50 lines.
-  - Files: target max 300 lines; hard limit 500 lines.
-  - Nesting: max 3 levels of blocks (if/for/try).
-  - Break apart or refactor when approaching limits; do not exceed hard limits.
+## Active Component
+[component_id] [component_name]
 
-- General Principles:
-  - Explicit over implicit; readability first.
-  - Composition over inheritance.
-  - Fail fast with clear messages and typed errors.
-  - Prefer pure functions and deterministic behavior.
-  - No premature abstraction; extract only after proven repetition.
-  - Small, testable units with clear inputs/outputs.
+## Current Milestone
+[What you're working on]
 
-Reminder: Update STATUS.md after each phase and milestone, and before/after switching the active component.
+## Progress
+- [x] Completed items
+- [ ] Remaining items
+
+## Blockers
+[Any blockers or decisions needed]
+
+## Last Updated
+[timestamp]
+```
+
+**Rules:**
+- Create `STATUS.md` on first task if it doesn't exist
+- Update after completing any feature or milestone
+- Update when switching components
+- Update when blocked
+- Read on session start to restore context
+
+---
+
+## Workflow Guidance
+
+Recommended phases for non-trivial tasks:
+
+1. **Index** — Map files and dependencies in scope. Indexing only — no suggestions or fixes.
+2. **Plan** — Produce implementation plan. Research latest stable versions for new deps. Flag decisions needing input.
+3. **Implement** — Follow the plan. Work in logical increments.
+4. **Verify** — Check exit criteria. Update STATUS.md.
+
+---
+
+## Scope Discipline
+
+### ALWAYS
+- Implement what the spec defines
+- Flag gaps or ambiguities before filling them
+- Use baseline deps from spec as version anchors
+- Follow code standards from `PROJECT_RULES.md`
+- Verify exit criteria before marking component complete
+- **Update `STATUS.md` after every feature/milestone**
+
+### NEVER
+- Add features not in the spec
+- Refactor adjacent components unprompted
+- Upgrade deps beyond stable versions in spec
+- Create abstractions for hypothetical future requirements
+- Proceed to next component before current passes verification
+
+### PREFER
+- Established libraries over custom implementations
+- Explicit over implicit
+- Composition over inheritance
+- Failing fast over silent degradation
+- Asking over assuming when spec is ambiguous
+
+---
+
+## Library Policy
+
+**Search before building.** Check in order:
+1. Current codebase utilities
+2. Project dependencies
+3. Well-maintained packages (PyPI, npm, etc.)
+
+Use established libraries for: parsing, validation, date/time, HTTP clients, file formats.
+
+Custom code only when no suitable library exists or you've flagged it and user approved.
+
+---
+
+## Minimalism Mandate (NON-NEGOTIABLE)
+
+**Start simple. Scale when necessary. Not before.**
+
+### ALWAYS
+- Begin with the simplest architecture that could work
+- Prefer stdlib over library, library over framework
+- Use lightweight solutions (SQLite before PostgreSQL clusters, monolith before microservices)
+- Write three similar lines before extracting a helper
+- Question every dependency: "Do I actually need this?"
+
+### NEVER add without explicit user request
+- Message queues (Redis queues, RabbitMQ, SQS)
+- Microservices or service mesh
+- CQRS or event sourcing
+- Kubernetes or container orchestration
+- GraphQL when REST suffices
+- State management libraries when React state works
+- ORMs when raw queries are simpler
+
+### WHY THIS MATTERS
+Premature complexity is the #1 cause of project failure. Every abstraction has a cost. Every dependency is a liability. Every service boundary is a failure point.
+
+**If the user didn't ask for it, don't add it.**
+
+---
+
+## Code Standards
+
+Apply dynamically based on `tech_stack.primary`:
+
+| Stack | Standards |
+|-------|-----------|
+| FastAPI | PEP 8 strict: snake_case functions/vars, PascalCase classes, 4-space indent, max 88 chars/line, type hints required |
+| Python | PEP 8 strict: snake_case functions/vars, PascalCase classes, 4-space indent, max 88 chars/line, type hints required |
+| React (Vite) | General best practices |
+| Supabase | General best practices |
+
+### Modularity Rules (ENFORCED)
+
+- Functions: **max 50 lines** — split larger functions into helpers
+- Files: **max 300 lines** (hard limit 500) — extract modules when exceeded
+- Classes: single responsibility — one reason to change
+- Nesting: **max 3 levels** — extract early returns or helper functions
+
+### General Principles
+
+- **Explicit over implicit** — no magic, no hidden behavior
+- **Composition over inheritance** — prefer interfaces and composition
+- **Fail fast** — validate inputs early, throw meaningful errors
+- **Pure functions** — minimize side effects, maximize testability
+- **No premature abstraction** — three similar lines beats one clever helper

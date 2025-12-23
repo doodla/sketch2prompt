@@ -6,63 +6,61 @@ import { writeFileSync, mkdirSync } from 'fs'
 import { join } from 'path'
 import {
   generateStartMd,
+  generateReadme,
   generateProjectRulesTemplate,
   generateAgentProtocolTemplate,
-  generateComponentYamlTemplate,
+  generateComponentSpecMarkdown,
 } from '../src/core/template-generator'
+import { exportJson } from '../src/core/export-json'
 import type { DiagramNode, DiagramEdge, NodeType } from '../src/core/types'
 
-// Define the example system: SaaS Starter
+// Define the example system: RAG Chat App
 const nodes: DiagramNode[] = [
   {
-    id: 'frontend-1',
+    id: 'node_YT9BDlvVE1',
     type: 'frontend' as NodeType,
-    position: { x: 100, y: 100 },
+    position: { x: 150, y: 100 },
     data: {
       label: 'Web App',
       type: 'frontend' as NodeType,
       meta: {
-        description: 'React SPA with dashboard, auth flows, and settings pages',
-        techStack: ['React (Vite)', 'TypeScript', 'Tailwind CSS'],
+        techStack: ['React (Vite)'],
       },
     },
   },
   {
-    id: 'backend-1',
+    id: 'node_IGpBRDK8v5',
     type: 'backend' as NodeType,
-    position: { x: 300, y: 100 },
+    position: { x: 150, y: 300 },
     data: {
-      label: 'API Server',
+      label: 'Backend',
       type: 'backend' as NodeType,
       meta: {
-        description: 'REST API handling business logic, user management, and data access',
-        techStack: ['FastAPI', 'Python'],
+        techStack: ['Python', 'FastAPI'],
       },
     },
   },
   {
-    id: 'storage-1',
+    id: 'node_xlpUZBm02F',
     type: 'storage' as NodeType,
-    position: { x: 300, y: 300 },
+    position: { x: 150, y: 500 },
     data: {
       label: 'Database',
       type: 'storage' as NodeType,
       meta: {
-        description: 'PostgreSQL database for users, subscriptions, and application data',
-        techStack: ['PostgreSQL', 'Supabase'],
+        techStack: ['Supabase'],
       },
     },
   },
   {
-    id: 'auth-1',
-    type: 'auth' as NodeType,
-    position: { x: 100, y: 300 },
+    id: 'node_sicFMoQ5zO',
+    type: 'storage' as NodeType,
+    position: { x: 430, y: 500 },
     data: {
-      label: 'Auth Service',
-      type: 'auth' as NodeType,
+      label: 'Vector Store',
+      type: 'storage' as NodeType,
       meta: {
-        description: 'Authentication and authorization via Supabase Auth',
-        techStack: ['Supabase'],
+        techStack: [],
       },
     },
   },
@@ -70,41 +68,33 @@ const nodes: DiagramNode[] = [
 
 const edges: DiagramEdge[] = [
   {
-    id: 'e1',
-    source: 'frontend-1',
-    target: 'backend-1',
+    id: 'edge_9u3ok7VGQ9',
+    source: 'node_YT9BDlvVE1',
+    target: 'node_IGpBRDK8v5',
     sourceHandle: null,
     targetHandle: null,
-    data: { label: 'REST API calls' },
+    data: { label: 'API calls' },
   },
   {
-    id: 'e2',
-    source: 'frontend-1',
-    target: 'auth-1',
+    id: 'edge_g3PnBaRwdB',
+    source: 'node_IGpBRDK8v5',
+    target: 'node_sicFMoQ5zO',
     sourceHandle: null,
     targetHandle: null,
-    data: { label: 'Auth flows (login, signup, logout)' },
+    data: { label: 'embeddings' },
   },
   {
-    id: 'e3',
-    source: 'backend-1',
-    target: 'storage-1',
+    id: 'edge_--WnEfd0No',
+    source: 'node_IGpBRDK8v5',
+    target: 'node_xlpUZBm02F',
     sourceHandle: null,
     targetHandle: null,
-    data: { label: 'Database queries' },
-  },
-  {
-    id: 'e4',
-    source: 'backend-1',
-    target: 'auth-1',
-    sourceHandle: null,
-    targetHandle: null,
-    data: { label: 'Token verification' },
+    data: { label: 'queries' },
   },
 ]
 
-const projectName = 'SaaS Starter'
-const outDir = join(process.cwd(), 'examples', 'saas-starter')
+const projectName = 'RAG Chat App'
+const outDir = join(process.cwd(), 'examples', 'rag-chat-app')
 
 // Create directories
 mkdirSync(outDir, { recursive: true })
@@ -112,6 +102,11 @@ mkdirSync(join(outDir, 'specs'), { recursive: true })
 
 // Generate files
 console.log('Generating example blueprint...\n')
+
+// README.md
+const readme = generateReadme(projectName)
+writeFileSync(join(outDir, 'README.md'), readme)
+console.log('✓ README.md')
 
 // START.md
 const startMd = generateStartMd(nodes, projectName)
@@ -128,12 +123,17 @@ const agentProtocol = generateAgentProtocolTemplate(nodes, projectName, [])
 writeFileSync(join(outDir, 'AGENT_PROTOCOL.md'), agentProtocol)
 console.log('✓ AGENT_PROTOCOL.md')
 
-// Component specs
+// Component specs (Markdown format)
 for (const node of nodes) {
-  const yaml = generateComponentYamlTemplate(node, edges, nodes)
-  const filename = node.data.label.toLowerCase().replace(/\s+/g, '-') + '.yaml'
-  writeFileSync(join(outDir, 'specs', filename), yaml)
+  const markdown = generateComponentSpecMarkdown(node, nodes)
+  const filename = node.data.label.toLowerCase().replace(/\s+/g, '-') + '.md'
+  writeFileSync(join(outDir, 'specs', filename), markdown)
   console.log(`✓ specs/${filename}`)
 }
 
-console.log('\n✅ Example blueprint generated in examples/saas-starter/')
+// diagram.json
+const diagramJson = exportJson(nodes, edges)
+writeFileSync(join(outDir, 'diagram.json'), diagramJson)
+console.log('✓ diagram.json')
+
+console.log('\n✅ Example blueprint generated in examples/rag-chat-app/')
