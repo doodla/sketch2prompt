@@ -7,7 +7,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org)
 
 <p align="center">
-  <img src="public/loop_sketch2prompt.gif" alt="sketch2prompt demo" width="700" />
+  <img src="public/shortshort.gif" alt="sketch2prompt demo" width="700" />
 </p>
 
 ---
