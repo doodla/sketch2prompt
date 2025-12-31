@@ -9,6 +9,7 @@ export {
   KNOWN_PACKAGES,
   getPackagesForTech,
   getRegistryUrl,
+  detectLanguage,
   type KnownPackage,
   type PackageRegistry,
-} from './known-packages'
+} from './packages'

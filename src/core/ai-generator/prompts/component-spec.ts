@@ -4,7 +4,7 @@ import {
   getPackagesForTech,
   detectLanguage,
   getRegistryUrl,
-} from '../../template-generator/constants/known-packages'
+} from '../../template-generator/constants/packages'
 
 /**
  * Build connections list for component

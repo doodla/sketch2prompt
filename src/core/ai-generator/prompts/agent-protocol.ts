@@ -3,7 +3,7 @@ import {
   KNOWN_PACKAGES,
   detectLanguage,
   getPackagesForTech,
-} from '../../template-generator/constants/known-packages'
+} from '../../template-generator/constants/packages'
 
 /**
  * Detect primary stacks from nodes using KNOWN_PACKAGES

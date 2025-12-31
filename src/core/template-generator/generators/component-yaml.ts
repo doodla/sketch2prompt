@@ -10,7 +10,7 @@ import {
   getRegistryUrl,
 } from '../constants'
 import { generateTypeSpecificFields } from '../sections'
-import { detectLanguage } from '../constants/known-packages'
+import { detectLanguage } from '../constants/packages'
 
 /**
  * Generate baseline_deps from known packages for the tech stack

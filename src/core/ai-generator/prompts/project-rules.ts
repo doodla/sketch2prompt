@@ -5,7 +5,7 @@ import { getBuildOrderRationale, getIntegrationPattern } from './helpers'
 import {
   getPackagesForTech,
   detectLanguage,
-} from '../../template-generator/constants/known-packages'
+} from '../../template-generator/constants/packages'
 
 /**
  * Build component list section

@@ -5,7 +5,7 @@ import {
   TYPE_LABELS,
   getPackagesForTech,
 } from '../constants'
-import { detectLanguage } from '../constants/known-packages'
+import { detectLanguage } from '../constants/packages'
 import { inferCommunicationPattern } from '../sections/integration-rules'
 
 /**
