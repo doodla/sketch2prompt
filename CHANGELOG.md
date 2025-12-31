@@ -31,4 +31,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cancel button no longer disabled during streaming generation
 - START.md now appears in export preview
 
-[Unreleased]: https://github.com/jmassengille/sketch2prompt/compare/v0.1.0...HEAD
+## [0.1.1] - 2025-12-31
+
+### Changed
+- **Package registry modularization** — Split monolithic `known-packages.ts` (777 lines) into per-registry files (`npm.ts`, `pypi.ts`, `cargo.ts`, `go.ts`, `maven.ts`, `nuget.ts`) for easier contributions
+- Removed "mobile app" from out-of-scope options
+
+### Documentation
+- Added package contribution guide to CONTRIBUTING.md
+
+[Unreleased]: https://github.com/jmassengille/sketch2prompt/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/jmassengille/sketch2prompt/compare/v0.1.0...v0.1.1
