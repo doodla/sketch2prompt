@@ -7,6 +7,7 @@ import type {
   DiagramNodeData,
   DiagramEdgeData,
   NodeType,
+  NodeMeta,
 } from './types'
 import { createNodeId, createEdgeId } from './id'
 import { getDefaultTechStack } from './default-tech-stacks'
@@ -22,7 +23,7 @@ interface DiagramStore {
   edges: DiagramEdge[]
 
   // Node actions
-  addNode: (type: NodeType, position: XYPosition) => void
+  addNode: (type: NodeType, position: XYPosition, meta?: Partial<NodeMeta>) => void
   updateNode: (id: string, data: Partial<DiagramNodeData>) => void
   updateNodePosition: (id: string, position: XYPosition) => void
   removeNode: (id: string) => void
@@ -48,7 +49,7 @@ export const useStore = create<DiagramStore>()(
     (set) => ({
       ...initialState,
 
-      addNode: (type, position) => {
+      addNode: (type, position, meta) => {
         set((state) => ({
           nodes: [
             ...state.nodes,
@@ -57,10 +58,11 @@ export const useStore = create<DiagramStore>()(
               type,
               position,
               data: {
-                label: getDefaultLabel(type),
+                label: meta?.label ?? getDefaultLabel(type),
                 type,
                 meta: {
                   techStack: getDefaultTechStack(type),
+                  ...meta,
                 },
               },
             },
@@ -167,6 +169,7 @@ function getDefaultLabel(type: NodeType): string {
     auth: 'Auth',
     external: 'External API',
     background: 'Background Job',
+    mindmap: 'Mind Map Node',
   }
   return labels[type]
 }

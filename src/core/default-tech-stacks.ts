@@ -12,6 +12,7 @@ export const DEFAULT_TECH_STACKS: Record<NodeType, string[]> = {
   auth: [],
   external: [],
   background: [],
+  mindmap: [],
 }
 
 /**

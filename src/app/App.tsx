@@ -11,6 +11,7 @@ import { OnboardingWizardV2 } from '../components/onboarding'
 import { FirstLaunchOverlay } from '../components/FirstLaunchOverlay'
 import { CommandPalette } from '../components/CommandPalette'
 import { QuickAddMenu } from '../components/QuickAddMenu'
+import { SuggestionPanel } from '../components/SuggestionPanel'
 import { useTemporalStore, useStore } from '../core/store'
 import { useSettingsStore } from '../core/settings'
 import { autoGenerateEdges } from '../core/auto-edges'
@@ -62,6 +63,8 @@ export function App() {
   const openQuickAdd = useUIStore((state) => state.openQuickAdd)
   const isCommandPaletteOpen = useUIStore((state) => state.isCommandPaletteOpen)
   const isQuickAddOpen = useUIStore((state) => state.isQuickAddOpen)
+  const suggestionPanelNodeId = useUIStore((state) => state.suggestionPanelNodeId)
+  const closeSuggestionPanel = useUIStore((state) => state.closeSuggestionPanel)
 
   const { undo, redo, pastStates, futureStates } = useTemporalStore(
     useShallow((state) => ({
@@ -395,6 +398,21 @@ export function App() {
           onDismiss={handleDismissFirstLaunch}
         />
       )}
+
+      {suggestionPanelNodeId && (() => {
+        const node = nodes.find(n => n.id === suggestionPanelNodeId)
+        if (node && node.data.meta.suggestions) {
+          return (
+            <SuggestionPanel
+              nodeId={suggestionPanelNodeId}
+              suggestions={node.data.meta.suggestions}
+              onClose={closeSuggestionPanel}
+            />
+          )
+        }
+        return null
+      })()}
+
       <Analytics />
     </div>
   )
