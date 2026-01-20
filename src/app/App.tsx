@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { ReactFlowProvider } from '@xyflow/react'
 import { useShallow } from 'zustand/react/shallow'
 import { Analytics } from '@vercel/analytics/react'
@@ -65,6 +65,13 @@ export function App() {
   const isQuickAddOpen = useUIStore((state) => state.isQuickAddOpen)
   const suggestionPanelNodeId = useUIStore((state) => state.suggestionPanelNodeId)
   const closeSuggestionPanel = useUIStore((state) => state.closeSuggestionPanel)
+
+  // Memoize suggestions lookup to avoid repeated searches
+  const suggestionPanelSuggestions = useMemo(() => {
+    if (!suggestionPanelNodeId) return []
+    const node = nodes.find(n => n.id === suggestionPanelNodeId)
+    return node?.data.meta.suggestions ?? []
+  }, [suggestionPanelNodeId, nodes])
 
   const { undo, redo, pastStates, futureStates } = useTemporalStore(
     useShallow((state) => ({
@@ -402,7 +409,7 @@ export function App() {
       {suggestionPanelNodeId && (
         <SuggestionPanel
           nodeId={suggestionPanelNodeId}
-          suggestions={nodes.find(n => n.id === suggestionPanelNodeId)?.data.meta.suggestions ?? []}
+          suggestions={suggestionPanelSuggestions}
           onClose={closeSuggestionPanel}
         />
       )}

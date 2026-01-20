@@ -1,31 +1,79 @@
-import { useState } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { Check, X, Edit3, Sparkles, ChevronDown, ChevronUp } from 'lucide-react'
 import type { AISuggestion } from '../core/types'
 import { useStore } from '../core/store'
 
+// Constants for child node positioning
+/** Horizontal offset for child nodes from parent */
+const CHILD_NODE_OFFSET_X = 300
+/** Vertical spacing between child nodes */
+const CHILD_NODE_OFFSET_Y = 120
+/** Maximum mind map depth (must match mindmap-expander.ts) */
+const MAX_MIND_MAP_DEPTH = 10
+
+/**
+ * Props for the SuggestionPanel component
+ */
 interface SuggestionPanelProps {
+  /** ID of the node being expanded */
   nodeId: string
+  /** Array of AI suggestions to review */
   suggestions: AISuggestion[]
+  /** Callback to close the panel */
   onClose: () => void
 }
 
+/**
+ * Panel for reviewing and acting on AI suggestions for mind map nodes
+ * Includes performance optimizations with memoization
+ *
+ * Features:
+ * - Accept/reject/edit suggestions
+ * - Preview child nodes before adding
+ * - Batch operations support
+ * - Optimistic UI updates
+ *
+ * @example
+ * ```tsx
+ * <SuggestionPanel
+ *   nodeId="node-123"
+ *   suggestions={suggestions}
+ *   onClose={() => setOpen(false)}
+ * />
+ * ```
+ */
 export function SuggestionPanel({ nodeId, suggestions, onClose }: SuggestionPanelProps) {
-  const [expandedSuggestions, setExpandedSuggestions] = useState<Set<string>>(
-    new Set(suggestions.map(s => s.id))
+  // Memoize initial expanded state
+  const initialExpanded = useMemo(
+    () => new Set(suggestions.map(s => s.id)),
+    [suggestions]
   )
+
+  const [expandedSuggestions, setExpandedSuggestions] = useState<Set<string>>(initialExpanded)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editedContent, setEditedContent] = useState<string>('')
+
   const updateNode = useStore((state) => state.updateNode)
   const addNode = useStore((state) => state.addNode)
   const addEdge = useStore((state) => state.addEdge)
   const nodes = useStore((state) => state.nodes)
 
-  const currentNode = nodes.find(n => n.id === nodeId)
+  // Memoize node lookup to avoid repeated searching
+  const currentNode = useMemo(
+    () => nodes.find(n => n.id === nodeId),
+    [nodes, nodeId]
+  )
+
   if (!currentNode) return null
 
-  const pendingSuggestions = suggestions.filter(s => s.status === 'pending')
+  // Memoize filtered pending suggestions
+  const pendingSuggestions = useMemo(
+    () => suggestions.filter(s => s.status === 'pending'),
+    [suggestions]
+  )
 
-  const toggleExpanded = (id: string) => {
+  // Memoize toggle function
+  const toggleExpanded = useCallback((id: string) => {
     setExpandedSuggestions(prev => {
       const next = new Set(prev)
       if (next.has(id)) {
@@ -35,21 +83,38 @@ export function SuggestionPanel({ nodeId, suggestions, onClose }: SuggestionPane
       }
       return next
     })
-  }
+  }, [])
 
-  const handleAccept = (suggestion: AISuggestion) => {
+  // Memoize accept handler - don't close panel immediately to allow batch operations
+  const handleAccept = useCallback((suggestion: AISuggestion) => {
     if (suggestion.type === 'add_children' && suggestion.metadata?.children) {
+      const currentLevel = currentNode.data.meta.level ?? 0
+
+      // Check max depth
+      if (currentLevel >= MAX_MIND_MAP_DEPTH) {
+        console.error(`Cannot add children: maximum depth of ${MAX_MIND_MAP_DEPTH} reached`)
+        return
+      }
+
+      // Validate children before processing
+      const validChildren = suggestion.metadata.children.filter(
+        child => child && child.label && child.label.trim().length > 0
+      )
+
+      if (validChildren.length === 0) {
+        console.warn('No valid children to add')
+        return
+      }
+
       // Add child nodes
-      const children = suggestion.metadata.children
       const currentX = currentNode.position.x
       const currentY = currentNode.position.y
       const childIds: string[] = []
 
-      children.forEach((child, index) => {
-        // addNode now returns the created node ID
+      validChildren.forEach((child, index) => {
         const childId = addNode('mindmap', {
-          x: currentX + 300,
-          y: currentY + index * 120,
+          x: currentX + CHILD_NODE_OFFSET_X,
+          y: currentY + index * CHILD_NODE_OFFSET_Y,
         }, {
           label: child.label,
           description: child.description,
@@ -85,10 +150,12 @@ export function SuggestionPanel({ nodeId, suggestions, onClose }: SuggestionPane
       })
     }
 
-    onClose()
-  }
+    // Don't close panel - allow user to accept multiple suggestions or review results
+    // User can manually close when done
+  }, [nodeId, currentNode, suggestions, addNode, addEdge, updateNode])
 
-  const handleReject = (suggestion: AISuggestion) => {
+  // Memoize reject handler
+  const handleReject = useCallback((suggestion: AISuggestion) => {
     updateNode(nodeId, {
       meta: {
         ...currentNode.data.meta,
@@ -97,14 +164,16 @@ export function SuggestionPanel({ nodeId, suggestions, onClose }: SuggestionPane
         ),
       },
     })
-  }
+  }, [nodeId, currentNode, suggestions, updateNode])
 
-  const handleEdit = (suggestion: AISuggestion) => {
+  // Memoize edit handler
+  const handleEdit = useCallback((suggestion: AISuggestion) => {
     setEditingId(suggestion.id)
     setEditedContent(suggestion.content)
-  }
+  }, [])
 
-  const handleSaveEdit = (suggestion: AISuggestion) => {
+  // Memoize save edit handler
+  const handleSaveEdit = useCallback((suggestion: AISuggestion) => {
     // Save edited suggestion
     updateNode(nodeId, {
       meta: {
@@ -117,7 +186,7 @@ export function SuggestionPanel({ nodeId, suggestions, onClose }: SuggestionPane
       },
     })
     setEditingId(null)
-  }
+  }, [nodeId, currentNode, suggestions, editedContent, updateNode])
 
   return (
     <div className="fixed inset-y-0 right-0 w-96 bg-[var(--color-workshop-elevated)] border-l border-[var(--color-workshop-border)] shadow-2xl z-50 flex flex-col">

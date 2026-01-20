@@ -15,7 +15,9 @@ import {
   useReactFlow,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
+import { ArrowLeft } from 'lucide-react'
 import { useStore } from '../core/store'
+import { useUIStore } from '../core/ui-store'
 import { nodeTypes } from './nodes'
 import { QuickAddFAB } from './QuickAddFAB'
 import { EmptyCanvasState } from './EmptyCanvasState'
@@ -40,24 +42,71 @@ interface CanvasInnerProps {
   colorMode: ColorMode
 }
 
-function CanvasInner({ colorMode }: CanvasInnerProps) {
-  const nodes = useStore((state) => state.nodes)
-  const storeEdges = useStore((state) => state.edges)
+/**
+ * Helper function to get all descendant IDs of a node
+ */
+function getDescendantIds(nodeId: string, allNodes: DiagramNode[]): Set<string> {
+  const descendants = new Set<string>()
+  const queue = [nodeId]
 
-  // Memoize edge transformation to prevent unnecessary callback recreation
-  const edges = useMemo(
-    () =>
-      storeEdges.map((edge) => ({
-        ...edge,
-        label: edge.data?.label,
-      })),
-    [storeEdges]
-  )
+  while (queue.length > 0) {
+    const currentId = queue.shift()!
+    descendants.add(currentId)
+
+    const childIds = allNodes.find(n => n.id === currentId)?.data.meta.childIds ?? []
+    queue.push(...childIds)
+  }
+
+  return descendants
+}
+
+function CanvasInner({ colorMode }: CanvasInnerProps) {
+  const allNodes = useStore((state) => state.nodes)
+  const storeEdges = useStore((state) => state.edges)
   const setNodes = useStore((state) => state.setNodes)
   const setEdges = useStore((state) => state.setEdges)
   const addEdgeToStore = useStore((state) => state.addEdge)
   const addNode = useStore((state) => state.addNode)
   const { screenToFlowPosition } = useReactFlow()
+
+  // Mind map drill-down state
+  const focusedMindMapNodeId = useUIStore((state) => state.focusedMindMapNodeId)
+  const clearMindMapFocus = useUIStore((state) => state.clearMindMapFocus)
+
+  // Filter nodes and edges when drill-down is active
+  const { nodes, edges: filteredEdges } = useMemo(() => {
+    if (!focusedMindMapNodeId) {
+      // No focus - show all nodes
+      return {
+        nodes: allNodes,
+        edges: storeEdges.map((edge) => ({
+          ...edge,
+          label: edge.data?.label,
+        })),
+      }
+    }
+
+    // Get focused node and all its descendants
+    const visibleNodeIds = getDescendantIds(focusedMindMapNodeId, allNodes)
+
+    // Filter nodes
+    const filteredNodes = allNodes.filter(n => visibleNodeIds.has(n.id))
+
+    // Filter edges - only show edges between visible nodes
+    const filteredEdges = storeEdges
+      .filter(e => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target))
+      .map((edge) => ({
+        ...edge,
+        label: edge.data?.label,
+      }))
+
+    return { nodes: filteredNodes, edges: filteredEdges }
+  }, [focusedMindMapNodeId, allNodes, storeEdges])
+
+  // Get focused node for displaying breadcrumb
+  const focusedNode = focusedMindMapNodeId
+    ? allNodes.find(n => n.id === focusedMindMapNodeId)
+    : null
 
   const onNodesChange: OnNodesChange<DiagramNode> = useCallback(
     (changes) => {
@@ -68,9 +117,9 @@ function CanvasInner({ colorMode }: CanvasInnerProps) {
 
   const onEdgesChange: OnEdgesChange<DiagramEdge> = useCallback(
     (changes) => {
-      setEdges(applyEdgeChanges(changes, edges))
+      setEdges(applyEdgeChanges(changes, filteredEdges))
     },
-    [edges, setEdges]
+    [filteredEdges, setEdges]
   )
 
   const onConnect: OnConnect = useCallback(
@@ -102,7 +151,7 @@ function CanvasInner({ colorMode }: CanvasInnerProps) {
     <>
       <ReactFlow
         nodes={nodes}
-        edges={edges}
+        edges={filteredEdges}
         nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
@@ -188,6 +237,27 @@ function CanvasInner({ colorMode }: CanvasInnerProps) {
       </ReactFlow>
       {isEmpty && <EmptyCanvasState />}
       <QuickAddFAB />
+
+      {/* Mind map drill-down back button */}
+      {focusedNode && (
+        <div className="absolute top-4 left-4 z-10 flex items-center gap-3 px-4 py-2.5 rounded-lg bg-[var(--color-workshop-elevated)] border border-[var(--color-workshop-border)] shadow-lg">
+          <button
+            onClick={clearMindMapFocus}
+            className="flex items-center gap-2 text-sm font-medium text-[var(--color-workshop-text)] hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+            title="Return to full view"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back</span>
+          </button>
+          <div className="h-4 w-px bg-[var(--color-workshop-border)]" />
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-[var(--color-workshop-text-muted)]">Focused on:</span>
+            <span className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
+              {focusedNode.data.label}
+            </span>
+          </div>
+        </div>
+      )}
     </>
   )
 }

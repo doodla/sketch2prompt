@@ -24,8 +24,13 @@ const MINDMAP_COLORS = {
   glowColor: 'rgba(99, 102, 241, 0.3)',
 }
 
+/**
+ * Mind Map Node Component
+ * Displays hierarchical mind map nodes with AI expansion capabilities
+ */
 export function MindMapNode({ id, data, selected }: NodeProps<DiagramNode>) {
   const openSuggestionPanel = useUIStore((state) => state.openSuggestionPanel)
+  const focusOnMindMapNode = useUIStore((state) => state.focusOnMindMapNode)
   const { expandNode, isExpanding, error } = useMindMapExpander()
 
   const childCount = data.meta.childIds?.length ?? 0
@@ -34,6 +39,9 @@ export function MindMapNode({ id, data, selected }: NodeProps<DiagramNode>) {
   const comments = data.meta.comments ?? []
   const level = data.meta.level ?? 0
 
+  /**
+   * Expand node with AI suggestions
+   */
   const handleExpand = async () => {
     const result = await expandNode(id)
     if (result && result.suggestions.length > 0) {
@@ -41,10 +49,14 @@ export function MindMapNode({ id, data, selected }: NodeProps<DiagramNode>) {
     }
   }
 
+  /**
+   * Drill down to focus on this node's children
+   * Filters the canvas to show only descendants
+   */
   const handleDrillDown = () => {
-    // Navigate to child view - could filter nodes to show only children
-    // For now, just log
-    console.log('Drilling down into node:', id)
+    if (childCount > 0) {
+      focusOnMindMapNode(id)
+    }
   }
 
   return (
@@ -200,8 +212,12 @@ export function MindMapNode({ id, data, selected }: NodeProps<DiagramNode>) {
           {/* Error message */}
           {error && (
             <div className="mt-3 pt-3 border-t border-[var(--color-workshop-border)]">
-              <div className="text-[11px] p-2 rounded-md bg-red-500/10 border border-red-500/20 text-red-700 dark:text-red-300">
-                {error}
+              <div className="flex items-start gap-2 p-3 rounded-md bg-red-500/10 border border-red-500/30 text-red-800 dark:text-red-200">
+                <X className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <div className="text-sm font-semibold mb-1">Expansion Failed</div>
+                  <div className="text-xs leading-relaxed">{error}</div>
+                </div>
               </div>
             </div>
           )}

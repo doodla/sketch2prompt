@@ -78,18 +78,40 @@ export interface TechRecommendation {
 
 // Mind Map AI Expansion Types
 export type SuggestionType = 'new_node' | 'edit_node' | 'edit_label' | 'edit_description' | 'add_children'
+export type SuggestionStatus = 'pending' | 'accepted' | 'rejected' | 'edited'
 
+/**
+ * Child node information for mind map expansion
+ */
+export type MindMapChild = {
+  label: string
+  description?: string
+}
+
+/**
+ * Metadata for different suggestion types
+ */
+export type SuggestionMetadata =
+  | { type: 'add_children'; children: MindMapChild[] }
+  | { type: 'edit_description'; description: string }
+  | { type: 'edit_label'; label: string }
+  | { type: 'new_node'; label: string; description?: string; position?: XYPosition }
+  | { type: 'edit_node' }
+
+/**
+ * AI suggestion for mind map expansion
+ */
 export type AISuggestion = {
   id: string
   type: SuggestionType
-  status: 'pending' | 'accepted' | 'rejected' | 'edited'
+  status: SuggestionStatus
   content: string
-  nodeId?: string // for edits, which node to modify
+  nodeId?: string
   metadata?: {
     label?: string
     description?: string
     position?: XYPosition
-    children?: Array<{ label: string; description?: string }>
+    children?: MindMapChild[]
   }
   timestamp: string
 }

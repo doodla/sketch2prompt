@@ -46,6 +46,11 @@ interface UIState {
   openSuggestionPanel: (nodeId: string) => void
   closeSuggestionPanel: () => void
 
+  // Mind map drill-down focus (show only children of a node)
+  focusedMindMapNodeId: string | null
+  focusOnMindMapNode: (nodeId: string) => void
+  clearMindMapFocus: () => void
+
   // Close all menus (useful for Escape key)
   closeAllMenus: () => void
 }
@@ -129,6 +134,15 @@ export const useUIStore = create<UIState>()((set) => ({
     set({ suggestionPanelNodeId: null })
   },
 
+  // Mind map drill-down
+  focusedMindMapNodeId: null,
+  focusOnMindMapNode: (nodeId) => {
+    set({ focusedMindMapNodeId: nodeId })
+  },
+  clearMindMapFocus: () => {
+    set({ focusedMindMapNodeId: null })
+  },
+
   // Close all menus
   closeAllMenus: () => {
     set({
@@ -137,6 +151,7 @@ export const useUIStore = create<UIState>()((set) => ({
       quickAddPosition: null,
       contextMenu: initialContextMenu,
       suggestionPanelNodeId: null,
+      focusedMindMapNodeId: null,
     })
   },
 }))
