@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { Check, X, Edit3, Sparkles, ChevronDown, ChevronUp } from 'lucide-react'
 import type { AISuggestion } from '../core/types'
 import { useStore } from '../core/store'
@@ -72,6 +72,11 @@ export function SuggestionPanel({ nodeId, suggestions, onClose }: SuggestionPane
     [suggestions]
   )
 
+  // Auto-expand new suggestions when they're added
+  useEffect(() => {
+    setExpandedSuggestions(new Set(suggestions.map(s => s.id)))
+  }, [suggestions])
+
   // Memoize toggle function
   const toggleExpanded = useCallback((id: string) => {
     setExpandedSuggestions(prev => {
@@ -92,9 +97,17 @@ export function SuggestionPanel({ nodeId, suggestions, onClose }: SuggestionPane
   // The real performance optimization comes from the useMemo hooks above.
 
   // Memoize accept handler - don't close panel immediately to allow batch operations
+  // NOTE: We get latest node from store within the callback to avoid stale closure issues
   const handleAccept = useCallback((suggestion: AISuggestion) => {
+    // Get the latest node state to avoid stale closures during rapid clicks
+    const latestNode = nodes.find(n => n.id === nodeId)
+    if (!latestNode) {
+      console.error('Node not found:', nodeId)
+      return
+    }
+
     if (suggestion.type === 'add_children' && suggestion.metadata?.children) {
-      const currentLevel = currentNode.data.meta.level ?? 0
+      const currentLevel = latestNode.data.meta.level ?? 0
 
       // Check max depth
       if (currentLevel >= MAX_MIND_MAP_DEPTH) {
@@ -113,8 +126,8 @@ export function SuggestionPanel({ nodeId, suggestions, onClose }: SuggestionPane
       }
 
       // Add child nodes
-      const currentX = currentNode.position.x
-      const currentY = currentNode.position.y
+      const currentX = latestNode.position.x
+      const currentY = latestNode.position.y
       const childIds: string[] = []
 
       validChildren.forEach((child, index) => {
@@ -125,7 +138,7 @@ export function SuggestionPanel({ nodeId, suggestions, onClose }: SuggestionPane
           label: child.label,
           description: child.description,
           parentId: nodeId,
-          level: (currentNode.data.meta.level ?? 0) + 1,
+          level: (latestNode.data.meta.level ?? 0) + 1,
         })
         childIds.push(childId)
 
@@ -133,23 +146,25 @@ export function SuggestionPanel({ nodeId, suggestions, onClose }: SuggestionPane
         addEdge(nodeId, childId)
       })
 
-      // Update parent node with child IDs and mark suggestion as accepted
+      // Get LATEST suggestions list and update
+      const latestSuggestions = latestNode.data.meta.suggestions ?? []
       updateNode(nodeId, {
         meta: {
-          ...currentNode.data.meta,
-          childIds: [...(currentNode.data.meta.childIds ?? []), ...childIds],
-          suggestions: suggestions.map(s =>
+          ...latestNode.data.meta,
+          childIds: [...(latestNode.data.meta.childIds ?? []), ...childIds],
+          suggestions: latestSuggestions.map(s =>
             s.id === suggestion.id ? { ...s, status: 'accepted' as const } : s
           ),
         },
       })
     } else if (suggestion.type === 'edit_description' && suggestion.metadata?.description) {
-      // Update description
+      // Get LATEST suggestions list and update
+      const latestSuggestions = latestNode.data.meta.suggestions ?? []
       updateNode(nodeId, {
         meta: {
-          ...currentNode.data.meta,
+          ...latestNode.data.meta,
           description: suggestion.metadata.description,
-          suggestions: suggestions.map(s =>
+          suggestions: latestSuggestions.map(s =>
             s.id === suggestion.id ? { ...s, status: 'accepted' as const } : s
           ),
         },
@@ -158,19 +173,24 @@ export function SuggestionPanel({ nodeId, suggestions, onClose }: SuggestionPane
 
     // Don't close panel - allow user to accept multiple suggestions or review results
     // User can manually close when done
-  }, [nodeId, currentNode, suggestions, addNode, addEdge, updateNode])
+  }, [nodeId, nodes, addNode, addEdge, updateNode])
 
   // Memoize reject handler
   const handleReject = useCallback((suggestion: AISuggestion) => {
+    // Get latest node to avoid stale closures
+    const latestNode = nodes.find(n => n.id === nodeId)
+    if (!latestNode) return
+
+    const latestSuggestions = latestNode.data.meta.suggestions ?? []
     updateNode(nodeId, {
       meta: {
-        ...currentNode.data.meta,
-        suggestions: suggestions.map(s =>
+        ...latestNode.data.meta,
+        suggestions: latestSuggestions.map(s =>
           s.id === suggestion.id ? { ...s, status: 'rejected' as const } : s
         ),
       },
     })
-  }, [nodeId, currentNode, suggestions, updateNode])
+  }, [nodeId, nodes, updateNode])
 
   // Memoize edit handler
   const handleEdit = useCallback((suggestion: AISuggestion) => {
@@ -180,11 +200,15 @@ export function SuggestionPanel({ nodeId, suggestions, onClose }: SuggestionPane
 
   // Memoize save edit handler
   const handleSaveEdit = useCallback((suggestion: AISuggestion) => {
-    // Save edited suggestion
+    // Get latest node to avoid stale closures
+    const latestNode = nodes.find(n => n.id === nodeId)
+    if (!latestNode) return
+
+    const latestSuggestions = latestNode.data.meta.suggestions ?? []
     updateNode(nodeId, {
       meta: {
-        ...currentNode.data.meta,
-        suggestions: suggestions.map(s =>
+        ...latestNode.data.meta,
+        suggestions: latestSuggestions.map(s =>
           s.id === suggestion.id
             ? { ...s, content: editedContent, status: 'edited' as const }
             : s
@@ -192,7 +216,7 @@ export function SuggestionPanel({ nodeId, suggestions, onClose }: SuggestionPane
       },
     })
     setEditingId(null)
-  }, [nodeId, currentNode, suggestions, editedContent, updateNode])
+  }, [nodeId, nodes, editedContent, updateNode])
 
   return (
     <div className="fixed inset-y-0 right-0 w-96 bg-[var(--color-workshop-elevated)] border-l border-[var(--color-workshop-border)] shadow-2xl z-50 flex flex-col">

@@ -9,10 +9,17 @@ const CACHE_TTL_MS = 5 * 60 * 1000
 const expansionCache = new Map<string, { result: MindMapExpansionResult; timestamp: number }>()
 
 /**
- * Create a cache key from expansion request
+ * Create a cache key from expansion request and AI settings
+ * Includes model and provider to avoid cross-contamination
  */
-function createCacheKey(request: MindMapExpansionRequest): string {
+function createCacheKey(
+  request: MindMapExpansionRequest,
+  provider: string,
+  model: string
+): string {
   return JSON.stringify({
+    provider,
+    model,
     label: request.nodeLabel,
     description: request.nodeDescription,
     context: request.context,
@@ -70,6 +77,9 @@ export function useMindMapExpander(): {
   // Debounce timer
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
 
+  // Track pending promise reject function to resolve memory leak
+  const pendingRejectRef = useRef<((reason?: any) => void) | null>(null)
+
   const nodes = useStore((state) => state.nodes)
   const updateNode = useStore((state) => state.updateNode)
   const apiKey = useSettingsStore((state) => state.apiKey)
@@ -85,6 +95,9 @@ export function useMindMapExpander(): {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current)
       }
+      if (pendingRejectRef.current) {
+        pendingRejectRef.current('Component unmounted')
+      }
     }
   }, [])
 
@@ -95,9 +108,13 @@ export function useMindMapExpander(): {
         abortControllerRef.current.abort()
       }
 
-      // Clear debounce timer
+      // Clear debounce timer and reject previous promise to prevent memory leak
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current)
+      }
+      if (pendingRejectRef.current) {
+        pendingRejectRef.current('Superseded by new request')
+        pendingRejectRef.current = null
       }
 
       const node = nodes.find((n) => n.id === nodeId)
@@ -117,8 +134,14 @@ export function useMindMapExpander(): {
       }
 
       // Debounce rapid requests (300ms)
-      return new Promise<MindMapExpansionResult | undefined>((resolve) => {
+      return new Promise<MindMapExpansionResult | undefined>((resolve, reject) => {
+        // Store reject function so we can reject if superseded
+        pendingRejectRef.current = reject
+
         debounceTimerRef.current = setTimeout(async () => {
+          // Clear reject ref since we're now executing
+          pendingRejectRef.current = null
+
           setIsExpanding(true)
           setError(null)
 
@@ -148,12 +171,12 @@ export function useMindMapExpander(): {
               userInstructions,
             }
 
-            // Check cache first
-            const cacheKey = createCacheKey(request)
+            // Check cache first (include provider and model in key)
+            const cacheKey = createCacheKey(request, apiProvider, modelId)
             const cachedResult = getCachedResult(cacheKey)
 
             if (cachedResult) {
-              console.log('Using cached expansion result')
+              console.log('Using cached expansion result for', apiProvider, modelId)
 
               // Update node with cached suggestions
               updateNode(nodeId, {
@@ -183,7 +206,7 @@ export function useMindMapExpander(): {
               return
             }
 
-            // Cache the result
+            // Cache the result (with provider and model in key)
             setCachedResult(cacheKey, result)
 
             // Update node with suggestions

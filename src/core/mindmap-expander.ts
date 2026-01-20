@@ -124,8 +124,14 @@ ${userInstructions ? `**User Instructions**: ${userInstructions}\n` : ''}
 1. Suggest 3-5 child nodes that break down "${nodeLabel}" into logical sub-components
 2. Keep all suggestions at the SAME level of abstraction (one level deeper than current)
 3. Each child node should be a clear, distinct aspect or phase
-4. Optionally suggest edits to the current node's description for clarity
+4. Optionally suggest edits to the current node's description for clarity (10-500 characters)
 5. Be concise and actionable
+
+**Constraints**:
+- Child node labels: 1-100 characters each
+- Child node descriptions: brief, under 200 characters
+- Edit description: 10-500 characters (if providing one)
+- Maximum 10 child nodes
 
 **CRITICAL: You MUST respond with valid JSON only. No other text before or after the JSON.**
 
@@ -136,7 +142,7 @@ ${userInstructions ? `**User Instructions**: ${userInstructions}\n` : ''}
     {"label": "Child 2 Label", "description": "Brief description"},
     {"label": "Child 3 Label", "description": "Brief description"}
   ],
-  "editDescription": "Optional: Improved description for the current node, or null if no edit needed",
+  "editDescription": "Optional: Improved description for the current node (10-500 chars), or null if no edit needed",
   "reasoning": "Brief explanation of your suggestions"
 }`
   }

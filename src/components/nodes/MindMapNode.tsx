@@ -4,6 +4,7 @@ import {
   ChevronRight,
   MessageSquare,
   Loader2,
+  X,
 } from 'lucide-react'
 import type { DiagramNode } from '../../core/types'
 import { NodeActions } from './NodeActions'
