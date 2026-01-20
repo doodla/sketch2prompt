@@ -80,6 +80,9 @@ export function useMindMapExpander(): {
   // Track pending promise reject function to resolve memory leak
   const pendingRejectRef = useRef<((reason?: any) => void) | null>(null)
 
+  // Track mount state to prevent setState after unmount
+  const isMountedRef = useRef(true)
+
   const nodes = useStore((state) => state.nodes)
   const updateNode = useStore((state) => state.updateNode)
   const apiKey = useSettingsStore((state) => state.apiKey)
@@ -88,7 +91,9 @@ export function useMindMapExpander(): {
 
   // Cleanup on unmount
   useEffect(() => {
+    isMountedRef.current = true
     return () => {
+      isMountedRef.current = false
       if (abortControllerRef.current) {
         abortControllerRef.current.abort()
       }
@@ -97,6 +102,7 @@ export function useMindMapExpander(): {
       }
       if (pendingRejectRef.current) {
         pendingRejectRef.current('Component unmounted')
+        pendingRejectRef.current = null
       }
     }
   }, [])

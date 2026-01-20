@@ -44,17 +44,28 @@ interface CanvasInnerProps {
 
 /**
  * Helper function to get all descendant IDs of a node
+ * Protects against circular references and optimizes with node map
  */
 function getDescendantIds(nodeId: string, allNodes: DiagramNode[]): Set<string> {
   const descendants = new Set<string>()
   const queue = [nodeId]
 
+  // Build node map for O(1) lookups instead of O(n) searches
+  const nodeMap = new Map(allNodes.map(n => [n.id, n]))
+
   while (queue.length > 0) {
     const currentId = queue.shift()!
     descendants.add(currentId)
 
-    const childIds = allNodes.find(n => n.id === currentId)?.data.meta.childIds ?? []
-    queue.push(...childIds)
+    const node = nodeMap.get(currentId)
+    const childIds = node?.data.meta.childIds ?? []
+
+    // Only add children that haven't been visited (prevents infinite loops)
+    for (const childId of childIds) {
+      if (!descendants.has(childId)) {
+        queue.push(childId)
+      }
+    }
   }
 
   return descendants

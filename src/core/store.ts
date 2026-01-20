@@ -24,7 +24,10 @@ interface DiagramStore {
 
   // Node actions
   addNode: (type: NodeType, position: XYPosition, meta?: Partial<NodeMeta>) => string
-  updateNode: (id: string, data: Partial<DiagramNodeData>) => void
+  updateNode: (
+    id: string,
+    data: Partial<DiagramNodeData> | ((current: DiagramNodeData) => Partial<DiagramNodeData>)
+  ) => void
   updateNodePosition: (id: string, position: XYPosition) => void
   removeNode: (id: string) => void
 
@@ -74,21 +77,24 @@ export const useStore = create<DiagramStore>()(
 
       updateNode: (id, data) => {
         set((state) => ({
-          nodes: state.nodes.map((node) =>
-            node.id === id
-              ? {
-                  ...node,
-                  data: {
-                    ...node.data,
-                    ...data,
-                    meta: {
-                      ...node.data.meta,
-                      ...(data.meta ?? {}),
-                    },
-                  },
-                }
-              : node
-          ),
+          nodes: state.nodes.map((node) => {
+            if (node.id !== id) return node
+
+            // Support functional updates to prevent race conditions
+            const updates = typeof data === 'function' ? data(node.data) : data
+
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                ...updates,
+                meta: {
+                  ...node.data.meta,
+                  ...(updates.meta ?? {}),
+                },
+              },
+            }
+          }),
         }))
       },
 

@@ -97,17 +97,17 @@ export function SuggestionPanel({ nodeId, suggestions, onClose }: SuggestionPane
   // The real performance optimization comes from the useMemo hooks above.
 
   // Memoize accept handler - don't close panel immediately to allow batch operations
-  // NOTE: We get latest node from store within the callback to avoid stale closure issues
+  // NOTE: Uses functional update to prevent race conditions during rapid clicks
   const handleAccept = useCallback((suggestion: AISuggestion) => {
-    // Get the latest node state to avoid stale closures during rapid clicks
-    const latestNode = nodes.find(n => n.id === nodeId)
-    if (!latestNode) {
+    // Get current node for position calculations
+    const currentNode = nodes.find(n => n.id === nodeId)
+    if (!currentNode) {
       console.error('Node not found:', nodeId)
       return
     }
 
     if (suggestion.type === 'add_children' && suggestion.metadata?.children) {
-      const currentLevel = latestNode.data.meta.level ?? 0
+      const currentLevel = currentNode.data.meta.level ?? 0
 
       // Check max depth
       if (currentLevel >= MAX_MIND_MAP_DEPTH) {
@@ -126,8 +126,8 @@ export function SuggestionPanel({ nodeId, suggestions, onClose }: SuggestionPane
       }
 
       // Add child nodes
-      const currentX = latestNode.position.x
-      const currentY = latestNode.position.y
+      const currentX = currentNode.position.x
+      const currentY = currentNode.position.y
       const childIds: string[] = []
 
       validChildren.forEach((child, index) => {
@@ -138,7 +138,7 @@ export function SuggestionPanel({ nodeId, suggestions, onClose }: SuggestionPane
           label: child.label,
           description: child.description,
           parentId: nodeId,
-          level: (latestNode.data.meta.level ?? 0) + 1,
+          level: (currentNode.data.meta.level ?? 0) + 1,
         })
         childIds.push(childId)
 
@@ -146,29 +146,30 @@ export function SuggestionPanel({ nodeId, suggestions, onClose }: SuggestionPane
         addEdge(nodeId, childId)
       })
 
-      // Get LATEST suggestions list and update
-      const latestSuggestions = latestNode.data.meta.suggestions ?? []
-      updateNode(nodeId, {
+      // Use functional update to prevent race conditions
+      updateNode(nodeId, (currentData) => ({
         meta: {
-          ...latestNode.data.meta,
-          childIds: [...(latestNode.data.meta.childIds ?? []), ...childIds],
-          suggestions: latestSuggestions.map(s =>
+          ...currentData.meta,
+          // Append to CURRENT childIds list (prevents concurrent update data loss)
+          childIds: [...(currentData.meta.childIds ?? []), ...childIds],
+          // Update CURRENT suggestions list
+          suggestions: (currentData.meta.suggestions ?? []).map(s =>
             s.id === suggestion.id ? { ...s, status: 'accepted' as const } : s
           ),
         },
-      })
+      }))
     } else if (suggestion.type === 'edit_description' && suggestion.metadata?.description) {
-      // Get LATEST suggestions list and update
-      const latestSuggestions = latestNode.data.meta.suggestions ?? []
-      updateNode(nodeId, {
+      // Use functional update to prevent race conditions
+      updateNode(nodeId, (currentData) => ({
         meta: {
-          ...latestNode.data.meta,
-          description: suggestion.metadata.description,
-          suggestions: latestSuggestions.map(s =>
+          ...currentData.meta,
+          description: suggestion.metadata!.description,
+          // Update CURRENT suggestions list
+          suggestions: (currentData.meta.suggestions ?? []).map(s =>
             s.id === suggestion.id ? { ...s, status: 'accepted' as const } : s
           ),
         },
-      })
+      }))
     }
 
     // Don't close panel - allow user to accept multiple suggestions or review results
@@ -177,20 +178,16 @@ export function SuggestionPanel({ nodeId, suggestions, onClose }: SuggestionPane
 
   // Memoize reject handler
   const handleReject = useCallback((suggestion: AISuggestion) => {
-    // Get latest node to avoid stale closures
-    const latestNode = nodes.find(n => n.id === nodeId)
-    if (!latestNode) return
-
-    const latestSuggestions = latestNode.data.meta.suggestions ?? []
-    updateNode(nodeId, {
+    // Use functional update to prevent race conditions
+    updateNode(nodeId, (currentData) => ({
       meta: {
-        ...latestNode.data.meta,
-        suggestions: latestSuggestions.map(s =>
+        ...currentData.meta,
+        suggestions: (currentData.meta.suggestions ?? []).map(s =>
           s.id === suggestion.id ? { ...s, status: 'rejected' as const } : s
         ),
       },
-    })
-  }, [nodeId, nodes, updateNode])
+    }))
+  }, [nodeId, updateNode])
 
   // Memoize edit handler
   const handleEdit = useCallback((suggestion: AISuggestion) => {
@@ -200,23 +197,19 @@ export function SuggestionPanel({ nodeId, suggestions, onClose }: SuggestionPane
 
   // Memoize save edit handler
   const handleSaveEdit = useCallback((suggestion: AISuggestion) => {
-    // Get latest node to avoid stale closures
-    const latestNode = nodes.find(n => n.id === nodeId)
-    if (!latestNode) return
-
-    const latestSuggestions = latestNode.data.meta.suggestions ?? []
-    updateNode(nodeId, {
+    // Use functional update to prevent race conditions
+    updateNode(nodeId, (currentData) => ({
       meta: {
-        ...latestNode.data.meta,
-        suggestions: latestSuggestions.map(s =>
+        ...currentData.meta,
+        suggestions: (currentData.meta.suggestions ?? []).map(s =>
           s.id === suggestion.id
             ? { ...s, content: editedContent, status: 'edited' as const }
             : s
         ),
       },
-    })
+    }))
     setEditingId(null)
-  }, [nodeId, nodes, editedContent, updateNode])
+  }, [nodeId, editedContent, updateNode])
 
   return (
     <div className="fixed inset-y-0 right-0 w-96 bg-[var(--color-workshop-elevated)] border-l border-[var(--color-workshop-border)] shadow-2xl z-50 flex flex-col">
