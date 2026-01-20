@@ -89,17 +89,13 @@ export type MindMapChild = {
 }
 
 /**
- * Metadata for different suggestion types
- */
-export type SuggestionMetadata =
-  | { type: 'add_children'; children: MindMapChild[] }
-  | { type: 'edit_description'; description: string }
-  | { type: 'edit_label'; label: string }
-  | { type: 'new_node'; label: string; description?: string; position?: XYPosition }
-  | { type: 'edit_node' }
-
-/**
  * AI suggestion for mind map expansion
+ *
+ * The metadata field structure depends on the suggestion type:
+ * - 'add_children': { children: MindMapChild[] }
+ * - 'edit_description': { description: string }
+ * - 'edit_label': { label: string }
+ * - 'new_node': { label: string; description?: string; position?: XYPosition }
  */
 export type AISuggestion = {
   id: string

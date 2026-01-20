@@ -110,16 +110,21 @@ function CanvasInner({ colorMode }: CanvasInnerProps) {
 
   const onNodesChange: OnNodesChange<DiagramNode> = useCallback(
     (changes) => {
-      setNodes(applyNodeChanges(changes, nodes))
+      // IMPORTANT: Apply changes to allNodes, not filtered nodes
+      // React Flow only sends changes for visible nodes, but we must
+      // apply them to the complete list to avoid losing hidden nodes
+      setNodes(applyNodeChanges(changes, allNodes))
     },
-    [nodes, setNodes]
+    [allNodes, setNodes]
   )
 
   const onEdgesChange: OnEdgesChange<DiagramEdge> = useCallback(
     (changes) => {
-      setEdges(applyEdgeChanges(changes, filteredEdges))
+      // IMPORTANT: Apply changes to storeEdges, not filtered edges
+      // Same reasoning as nodes - preserve hidden edges
+      setEdges(applyEdgeChanges(changes, storeEdges))
     },
-    [filteredEdges, setEdges]
+    [storeEdges, setEdges]
   )
 
   const onConnect: OnConnect = useCallback(
@@ -138,14 +143,14 @@ function CanvasInner({ colorMode }: CanvasInnerProps) {
         x: event.clientX,
         y: event.clientY,
       })
-      const index = nodes.length % NODE_TYPES_CYCLE.length
+      const index = allNodes.length % NODE_TYPES_CYCLE.length
       const nodeType = NODE_TYPES_CYCLE[index] ?? 'frontend'
       addNode(nodeType, position)
     },
-    [screenToFlowPosition, addNode, nodes.length]
+    [screenToFlowPosition, addNode, allNodes.length]
   )
 
-  const isEmpty = nodes.length === 0
+  const isEmpty = allNodes.length === 0
 
   return (
     <>
@@ -228,6 +233,7 @@ function CanvasInner({ colorMode }: CanvasInnerProps) {
               auth: '#F472B6',
               external: '#FBBF24',
               background: '#A8A29E',
+              mindmap: '#818CF8', // Indigo color for mind map nodes
             }
             const nodeData = node.data as DiagramNodeData | undefined
             const nodeType = nodeData?.type

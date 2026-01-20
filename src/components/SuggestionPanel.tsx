@@ -85,6 +85,12 @@ export function SuggestionPanel({ nodeId, suggestions, onClose }: SuggestionPane
     })
   }, [])
 
+  // Note: The following callbacks include currentNode and suggestions in dependencies.
+  // This is necessary for correctness (to avoid stale closures), even though it means
+  // callbacks recreate when these values change. Since these callbacks aren't passed
+  // to memoized child components, the recreation doesn't cause additional re-renders.
+  // The real performance optimization comes from the useMemo hooks above.
+
   // Memoize accept handler - don't close panel immediately to allow batch operations
   const handleAccept = useCallback((suggestion: AISuggestion) => {
     if (suggestion.type === 'add_children' && suggestion.metadata?.children) {
