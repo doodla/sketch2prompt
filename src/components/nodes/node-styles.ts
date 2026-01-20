@@ -140,6 +140,25 @@ export const NODE_COLORS: Record<NodeType, {
     chipText: 'text-orange-700 dark:text-orange-300',
     chipBorder: 'border-orange-200 dark:border-orange-700/60',
   },
+  mindmap: {
+    bg: 'bg-indigo-50/80 dark:bg-indigo-950/40',
+    bgSelected: 'bg-indigo-100 dark:bg-indigo-900/50',
+    border: 'border-indigo-200/80 dark:border-indigo-700/50',
+    borderSelected: 'border-indigo-400 dark:border-indigo-500',
+    accent: 'bg-indigo-500',
+    ring: 'ring-indigo-500/40 dark:ring-indigo-400/40',
+    textType: 'text-indigo-600 dark:text-indigo-400',
+    textTypeHover: 'hover:text-indigo-700 dark:hover:text-indigo-300',
+    handleBg: '!bg-indigo-500 dark:!bg-indigo-400',
+    gradientFrom: 'from-indigo-500',
+    gradientTo: 'to-purple-500',
+    glow: 'shadow-[0_0_12px_rgba(99,102,241,0.12)]',
+    glowIntense: 'shadow-[0_0_24px_rgba(99,102,241,0.25)]',
+    glowColor: 'rgba(99, 102, 241, 0.3)',
+    chipBg: 'bg-indigo-100 dark:bg-indigo-900/50',
+    chipText: 'text-indigo-700 dark:text-indigo-300',
+    chipBorder: 'border-indigo-200 dark:border-indigo-700/60',
+  },
 }
 
 /**
@@ -152,4 +171,5 @@ export const TYPE_LABELS: Record<NodeType, string> = {
   auth: 'Auth',
   external: 'External',
   background: 'Background',
+  mindmap: 'Mind Map',
 }

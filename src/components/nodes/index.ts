@@ -4,6 +4,7 @@ import { StorageNode } from './StorageNode'
 import { AuthNode } from './AuthNode'
 import { ExternalNode } from './ExternalNode'
 import { BackgroundNode } from './BackgroundNode'
+import { MindMapNode } from './MindMapNode'
 
 export const nodeTypes = {
   frontend: FrontendNode,
@@ -12,6 +13,7 @@ export const nodeTypes = {
   auth: AuthNode,
   external: ExternalNode,
   background: BackgroundNode,
+  mindmap: MindMapNode,
 } as const
 
 export {
@@ -21,4 +23,5 @@ export {
   AuthNode,
   ExternalNode,
   BackgroundNode,
+  MindMapNode,
 }

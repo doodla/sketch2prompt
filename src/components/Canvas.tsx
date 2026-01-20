@@ -33,6 +33,7 @@ const NODE_TYPES_CYCLE: NodeType[] = [
   'auth',
   'external',
   'background',
+  'mindmap',
 ]
 
 interface CanvasInnerProps {
