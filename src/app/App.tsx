@@ -399,19 +399,13 @@ export function App() {
         />
       )}
 
-      {suggestionPanelNodeId && (() => {
-        const node = nodes.find(n => n.id === suggestionPanelNodeId)
-        if (node && node.data.meta.suggestions) {
-          return (
-            <SuggestionPanel
-              nodeId={suggestionPanelNodeId}
-              suggestions={node.data.meta.suggestions}
-              onClose={closeSuggestionPanel}
-            />
-          )
-        }
-        return null
-      })()}
+      {suggestionPanelNodeId && (
+        <SuggestionPanel
+          nodeId={suggestionPanelNodeId}
+          suggestions={nodes.find(n => n.id === suggestionPanelNodeId)?.data.meta.suggestions ?? []}
+          onClose={closeSuggestionPanel}
+        />
+      )}
 
       <Analytics />
     </div>

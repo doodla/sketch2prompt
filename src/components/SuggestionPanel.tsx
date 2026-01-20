@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Check, X, Edit3, MessageSquare, Sparkles, ChevronDown, ChevronUp } from 'lucide-react'
-import type { AISuggestion, DiagramNode } from '../core/types'
+import { Check, X, Edit3, Sparkles, ChevronDown, ChevronUp } from 'lucide-react'
+import type { AISuggestion } from '../core/types'
 import { useStore } from '../core/store'
 
 interface SuggestionPanelProps {
@@ -17,6 +17,7 @@ export function SuggestionPanel({ nodeId, suggestions, onClose }: SuggestionPane
   const [editedContent, setEditedContent] = useState<string>('')
   const updateNode = useStore((state) => state.updateNode)
   const addNode = useStore((state) => state.addNode)
+  const addEdge = useStore((state) => state.addEdge)
   const nodes = useStore((state) => state.nodes)
 
   const currentNode = nodes.find(n => n.id === nodeId)
@@ -45,8 +46,8 @@ export function SuggestionPanel({ nodeId, suggestions, onClose }: SuggestionPane
       const childIds: string[] = []
 
       children.forEach((child, index) => {
-        const childId = `node-${Date.now()}-${index}`
-        addNode('mindmap', {
+        // addNode now returns the created node ID
+        const childId = addNode('mindmap', {
           x: currentX + 300,
           y: currentY + index * 120,
         }, {
@@ -56,9 +57,12 @@ export function SuggestionPanel({ nodeId, suggestions, onClose }: SuggestionPane
           level: (currentNode.data.meta.level ?? 0) + 1,
         })
         childIds.push(childId)
+
+        // Create edge from parent to child
+        addEdge(nodeId, childId)
       })
 
-      // Update parent node with child IDs
+      // Update parent node with child IDs and mark suggestion as accepted
       updateNode(nodeId, {
         meta: {
           ...currentNode.data.meta,
@@ -113,16 +117,6 @@ export function SuggestionPanel({ nodeId, suggestions, onClose }: SuggestionPane
       },
     })
     setEditingId(null)
-  }
-
-  const handleAddComment = (suggestionId: string, comment: string) => {
-    const currentComments = currentNode.data.meta.comments ?? []
-    updateNode(nodeId, {
-      meta: {
-        ...currentNode.data.meta,
-        comments: [...currentComments, comment],
-      },
-    })
   }
 
   return (

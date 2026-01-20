@@ -23,7 +23,7 @@ interface DiagramStore {
   edges: DiagramEdge[]
 
   // Node actions
-  addNode: (type: NodeType, position: XYPosition, meta?: Partial<NodeMeta>) => void
+  addNode: (type: NodeType, position: XYPosition, meta?: Partial<NodeMeta>) => string
   updateNode: (id: string, data: Partial<DiagramNodeData>) => void
   updateNodePosition: (id: string, position: XYPosition) => void
   removeNode: (id: string) => void
@@ -50,11 +50,12 @@ export const useStore = create<DiagramStore>()(
       ...initialState,
 
       addNode: (type, position, meta) => {
+        const nodeId = createNodeId()
         set((state) => ({
           nodes: [
             ...state.nodes,
             {
-              id: createNodeId(),
+              id: nodeId,
               type,
               position,
               data: {
@@ -68,6 +69,7 @@ export const useStore = create<DiagramStore>()(
             },
           ],
         }))
+        return nodeId
       },
 
       updateNode: (id, data) => {

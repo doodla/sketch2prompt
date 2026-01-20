@@ -3,18 +3,12 @@ import {
   Sparkles,
   ChevronRight,
   MessageSquare,
-  Plus,
-  Check,
-  X,
-  Edit3,
   Loader2,
 } from 'lucide-react'
 import type { DiagramNode } from '../../core/types'
 import { NodeActions } from './NodeActions'
-import { useStore } from '../../core/store'
 import { useUIStore } from '../../core/ui-store'
 import { useMindMapExpander } from '../../hooks/useMindMapExpander'
-import { useState } from 'react'
 
 const MINDMAP_COLORS = {
   bg: 'bg-[var(--color-workshop-elevated)]',
@@ -31,7 +25,6 @@ const MINDMAP_COLORS = {
 }
 
 export function MindMapNode({ id, data, selected }: NodeProps<DiagramNode>) {
-  const updateNode = useStore((state) => state.updateNode)
   const openSuggestionPanel = useUIStore((state) => state.openSuggestionPanel)
   const { expandNode, isExpanding, error } = useMindMapExpander()
 
