@@ -6,6 +6,7 @@ import type {
 } from './types'
 import { createClient, callAI } from './ai-generator/client'
 import type { AIProvider } from './ai-generator/types'
+import { sanitizeAIContent } from '../utils/sanitize'
 
 /** Maximum allowed depth for mind map hierarchy */
 const MAX_MIND_MAP_DEPTH = 10
@@ -207,9 +208,10 @@ Keep breaking down into concrete, actionable items.`
               return true
             })
             .map((child: any) => {
-              const label = String(child.label).trim()
+              // Sanitize AI-generated content to prevent XSS
+              const label = sanitizeAIContent(String(child.label).trim())
               const description = child.description && typeof child.description === 'string'
-                ? String(child.description).trim()
+                ? sanitizeAIContent(String(child.description).trim())
                 : undefined
 
               return {
@@ -230,7 +232,7 @@ Keep breaking down into concrete, actionable items.`
 
           if (limitedChildren.length > 0) {
             suggestions.push({
-              id: `suggestion-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              id: `suggestion-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
               type: 'add_children',
               status: 'pending',
               content: `Add ${limitedChildren.length} child node${limitedChildren.length !== 1 ? 's' : ''}`,
@@ -250,12 +252,13 @@ Keep breaking down into concrete, actionable items.`
             parsed.editDescription.toLowerCase() !== 'none' &&
             parsed.editDescription.toLowerCase() !== 'null' &&
             parsed.editDescription.trim().length > 0) {
-          const description = parsed.editDescription.trim()
+          // Sanitize AI-generated content to prevent XSS
+          const description = sanitizeAIContent(parsed.editDescription.trim())
 
           // Validate description length (reasonable limits)
           if (description.length >= 10 && description.length <= 500) {
             suggestions.push({
-              id: `suggestion-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              id: `suggestion-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
               type: 'edit_description',
               status: 'pending',
               content: description,
@@ -314,7 +317,7 @@ Keep breaking down into concrete, actionable items.`
 
       if (children.length > 0) {
         suggestions.push({
-          id: `suggestion-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          id: `suggestion-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
           type: 'add_children',
           status: 'pending',
           content: `Add ${children.length} child node${children.length !== 1 ? 's' : ''}`,
@@ -334,7 +337,7 @@ Keep breaking down into concrete, actionable items.`
           description.toLowerCase() !== 'null' &&
           description.length > 0) {
         suggestions.push({
-          id: `suggestion-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          id: `suggestion-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
           type: 'edit_description',
           status: 'pending',
           content: description,

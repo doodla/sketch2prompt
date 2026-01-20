@@ -145,34 +145,54 @@ export function useMindMapExpander(): {
         pendingRejectRef.current = reject
 
         debounceTimerRef.current = setTimeout(async () => {
+          // Check if component unmounted before timeout fired
+          if (!isMountedRef.current) {
+            resolve(undefined)
+            return
+          }
+
           // Clear reject ref since we're now executing
           pendingRejectRef.current = null
 
-          setIsExpanding(true)
-          setError(null)
+          // Get fresh nodes from store to avoid stale closure
+          const latestNodes = useStore.getState().nodes
+          const latestNode = latestNodes.find((n) => n.id === nodeId)
+
+          if (!latestNode) {
+            if (isMountedRef.current) {
+              setError('Node not found in diagram. Please refresh and try again.')
+            }
+            resolve(undefined)
+            return
+          }
+
+          if (isMountedRef.current) {
+            setIsExpanding(true)
+            setError(null)
+          }
 
           // Create abort controller for this request
           const abortController = new AbortController()
           abortControllerRef.current = abortController
 
           try {
-            // Build expansion request
-            const parentNode = node.data.meta.parentId
-              ? nodes.find((n) => n.id === node.data.meta.parentId)
+            // Build expansion request using fresh nodes
+            const parentNode = latestNode.data.meta.parentId
+              ? latestNodes.find((n) => n.id === latestNode.data.meta.parentId)
               : undefined
 
-            const siblingNodes = nodes.filter(
-              (n) => n.data.meta.parentId === node.data.meta.parentId && n.id !== nodeId
+            const siblingNodes = latestNodes.filter(
+              (n) => n.data.meta.parentId === latestNode.data.meta.parentId && n.id !== nodeId
             )
 
             const request: MindMapExpansionRequest = {
               nodeId,
-              nodeLabel: node.data.label,
-              nodeDescription: node.data.meta.description,
+              nodeLabel: latestNode.data.label,
+              nodeDescription: latestNode.data.meta.description,
               context: {
                 parentLabel: parentNode?.data.label,
                 siblingLabels: siblingNodes.map((n) => n.data.label),
-                currentLevel: node.data.meta.level ?? 0,
+                currentLevel: latestNode.data.meta.level ?? 0,
               },
               userInstructions,
             }
@@ -187,15 +207,17 @@ export function useMindMapExpander(): {
               // Update node with cached suggestions
               updateNode(nodeId, {
                 meta: {
-                  ...node.data.meta,
+                  ...latestNode.data.meta,
                   suggestions: [
-                    ...(node.data.meta.suggestions ?? []),
+                    ...(latestNode.data.meta.suggestions ?? []),
                     ...cachedResult.suggestions,
                   ],
                 },
               })
 
-              setIsExpanding(false)
+              if (isMountedRef.current) {
+                setIsExpanding(false)
+              }
               resolve(cachedResult)
               return
             }
@@ -204,10 +226,12 @@ export function useMindMapExpander(): {
             const expander = createMindMapExpander(apiKey, apiProvider, modelId)
             const result = await expander.expandNode(request)
 
-            // Check if request was aborted
-            if (abortController.signal.aborted) {
-              console.log('Expansion request was aborted')
-              setIsExpanding(false)
+            // Check if request was aborted or component unmounted
+            if (abortController.signal.aborted || !isMountedRef.current) {
+              console.log('Expansion request was aborted or component unmounted')
+              if (isMountedRef.current) {
+                setIsExpanding(false)
+              }
               resolve(undefined)
               return
             }
@@ -218,21 +242,25 @@ export function useMindMapExpander(): {
             // Update node with suggestions
             updateNode(nodeId, {
               meta: {
-                ...node.data.meta,
+                ...latestNode.data.meta,
                 suggestions: [
-                  ...(node.data.meta.suggestions ?? []),
+                  ...(latestNode.data.meta.suggestions ?? []),
                   ...result.suggestions,
                 ],
               },
             })
 
-            setIsExpanding(false)
+            if (isMountedRef.current) {
+              setIsExpanding(false)
+            }
             resolve(result)
           } catch (err) {
-            // Don't show error if request was aborted
-            if (abortController.signal.aborted) {
-              console.log('Expansion request was aborted')
-              setIsExpanding(false)
+            // Don't show error if request was aborted or component unmounted
+            if (abortController.signal.aborted || !isMountedRef.current) {
+              console.log('Expansion request was aborted or component unmounted')
+              if (isMountedRef.current) {
+                setIsExpanding(false)
+              }
               resolve(undefined)
               return
             }
@@ -254,15 +282,17 @@ export function useMindMapExpander(): {
               }
             }
 
-            setError(errorMessage)
+            if (isMountedRef.current) {
+              setError(errorMessage)
+              setIsExpanding(false)
+            }
             console.error('Mind map expansion error:', err)
-            setIsExpanding(false)
             resolve(undefined)
           }
         }, 300)
       })
     },
-    [nodes, apiKey, apiProvider, modelId, updateNode]
+    [apiKey, apiProvider, modelId, updateNode]
   )
 
   return {
