@@ -206,27 +206,23 @@ The primary deliverable is structured specifications that AI coding assistants (
 
 ## Project Management
 
+### Document Index
+
+| Document | Purpose |
+|----------|---------|
+| `.claude/STATUS.md` | Current phase, active milestone, checkpoint state — **read this first** (local, not committed) |
+| `docs/planning/ai-copilot.md` | AI Copilot feature: vision, UX, architecture, testing, milestones |
+
 ### Status Tracking
 
 `.claude/STATUS.md` tracks current phase, milestone, and progress. **Update after every milestone.**
-
-### Phase Documentation
-
-Implementation phases live in `.claude/phases/`:
-- `001-foundation.md` - Bootstrap, Types, Store
-- `002-canvas.md` - React Flow, Custom Nodes
-- `003-ui-panels.md` - Toolbar, Inspector
-- `004-export.md` - Prompt, JSON, Drawer
-- `005-polish.md` - Undo/Redo, Theme, Tests
-
-Reference the relevant phase file before starting work.
 
 ### Session Recovery (Post-Compact Protocol)
 
 After `/compact` or starting a new session, **immediately**:
 
 1. **Read `.claude/STATUS.md`** — Contains current plan, active milestone, checkpoint state
-2. **Read the active plan file** — Referenced in STATUS.md (e.g., `.claude/plans/output-spec-alignment.md`)
+2. **Read the active plan file** — Referenced in STATUS.md
 3. **Check todo list** — Todos persist through compaction; shows granular progress
 4. **Re-read this file** — Refresh on project patterns and the OUTPUT vs dev env distinction
 
@@ -244,7 +240,7 @@ Plans live in `.claude/plans/`. Current active plan is always referenced in STAT
 
 | Plan | Status | Description |
 |------|--------|-------------|
-| `output-spec-alignment.md` | **Active** | Align generators with output spec (M0-M5) |
+| `docs/planning/ai-copilot.md` | **Active** | AI Copilot: collaborative suggestion model (M0-M4) |
 
 ---
 
