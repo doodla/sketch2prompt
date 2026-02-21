@@ -41,6 +41,11 @@ interface UIState {
   copyToClipboard: (nodes: DiagramNode[]) => void
   clearClipboard: () => void
 
+  // Suggestion panel for mind map AI suggestions
+  suggestionPanelNodeId: string | null
+  openSuggestionPanel: (nodeId: string) => void
+  closeSuggestionPanel: () => void
+
   // Close all menus (useful for Escape key)
   closeAllMenus: () => void
 }
@@ -115,6 +120,15 @@ export const useUIStore = create<UIState>()((set) => ({
     set({ clipboard: [] })
   },
 
+  // Suggestion panel
+  suggestionPanelNodeId: null,
+  openSuggestionPanel: (nodeId) => {
+    set({ suggestionPanelNodeId: nodeId })
+  },
+  closeSuggestionPanel: () => {
+    set({ suggestionPanelNodeId: null })
+  },
+
   // Close all menus
   closeAllMenus: () => {
     set({
@@ -122,6 +136,7 @@ export const useUIStore = create<UIState>()((set) => ({
       isQuickAddOpen: false,
       quickAddPosition: null,
       contextMenu: initialContextMenu,
+      suggestionPanelNodeId: null,
     })
   },
 }))

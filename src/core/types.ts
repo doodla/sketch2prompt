@@ -7,6 +7,7 @@ export const NODE_TYPES = {
   auth: 'auth',
   external: 'external',
   background: 'background',
+  mindmap: 'mindmap',
 } as const
 
 export type NodeType = (typeof NODE_TYPES)[keyof typeof NODE_TYPES]
@@ -14,6 +15,13 @@ export type NodeType = (typeof NODE_TYPES)[keyof typeof NODE_TYPES]
 export type NodeMeta = {
   description?: string
   techStack?: string[]
+  // Mind map specific fields
+  parentId?: string
+  childIds?: string[]
+  isExpanded?: boolean
+  suggestions?: AISuggestion[]
+  comments?: string[]
+  level?: number // abstraction level for consistent AI expansion
 }
 
 export type DiagramNodeData = {
@@ -66,4 +74,39 @@ export interface TechRecommendation {
   name: string
   category: RecommendationCategory
   hasFreeTier: boolean
+}
+
+// Mind Map AI Expansion Types
+export type SuggestionType = 'new_node' | 'edit_node' | 'edit_label' | 'edit_description' | 'add_children'
+
+export type AISuggestion = {
+  id: string
+  type: SuggestionType
+  status: 'pending' | 'accepted' | 'rejected' | 'edited'
+  content: string
+  nodeId?: string // for edits, which node to modify
+  metadata?: {
+    label?: string
+    description?: string
+    position?: XYPosition
+    children?: Array<{ label: string; description?: string }>
+  }
+  timestamp: string
+}
+
+export type MindMapExpansionRequest = {
+  nodeId: string
+  nodeLabel: string
+  nodeDescription?: string
+  context: {
+    parentLabel?: string
+    siblingLabels?: string[]
+    currentLevel: number
+  }
+  userInstructions?: string
+}
+
+export type MindMapExpansionResult = {
+  suggestions: AISuggestion[]
+  reasoning?: string
 }
