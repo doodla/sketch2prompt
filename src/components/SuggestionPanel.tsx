@@ -46,7 +46,6 @@ export function SuggestionPanel({ nodeId, suggestions, onClose }: SuggestionPane
       const childIds: string[] = []
 
       children.forEach((child, index) => {
-        // addNode now returns the created node ID
         const childId = addNode('mindmap', {
           x: currentX + 300,
           y: currentY + index * 120,
@@ -57,28 +56,28 @@ export function SuggestionPanel({ nodeId, suggestions, onClose }: SuggestionPane
           level: (currentNode.data.meta.level ?? 0) + 1,
         })
         childIds.push(childId)
-
-        // Create edge from parent to child
         addEdge(nodeId, childId)
       })
 
-      // Update parent node with child IDs and mark suggestion as accepted
+      // Read fresh childIds and suggestions from store to avoid overwriting concurrent updates
+      const freshMeta = useStore.getState().nodes.find((n) => n.id === nodeId)?.data.meta
       updateNode(nodeId, {
         meta: {
-          ...currentNode.data.meta,
-          childIds: [...(currentNode.data.meta.childIds ?? []), ...childIds],
-          suggestions: suggestions.map(s =>
+          childIds: [...(freshMeta?.childIds ?? []), ...childIds],
+          suggestions: (freshMeta?.suggestions ?? suggestions).map((s) =>
             s.id === suggestion.id ? { ...s, status: 'accepted' as const } : s
           ),
         },
       })
     } else if (suggestion.type === 'edit_description' && suggestion.metadata?.description) {
-      // Update description
+      // Only update the fields that change; let the store merge the rest
+      const freshSuggestions =
+        useStore.getState().nodes.find((n) => n.id === nodeId)?.data.meta.suggestions ??
+        suggestions
       updateNode(nodeId, {
         meta: {
-          ...currentNode.data.meta,
           description: suggestion.metadata.description,
-          suggestions: suggestions.map(s =>
+          suggestions: freshSuggestions.map((s) =>
             s.id === suggestion.id ? { ...s, status: 'accepted' as const } : s
           ),
         },
@@ -89,10 +88,12 @@ export function SuggestionPanel({ nodeId, suggestions, onClose }: SuggestionPane
   }
 
   const handleReject = (suggestion: AISuggestion) => {
+    const freshSuggestions =
+      useStore.getState().nodes.find((n) => n.id === nodeId)?.data.meta.suggestions ??
+      suggestions
     updateNode(nodeId, {
       meta: {
-        ...currentNode.data.meta,
-        suggestions: suggestions.map(s =>
+        suggestions: freshSuggestions.map((s) =>
           s.id === suggestion.id ? { ...s, status: 'rejected' as const } : s
         ),
       },
@@ -105,11 +106,12 @@ export function SuggestionPanel({ nodeId, suggestions, onClose }: SuggestionPane
   }
 
   const handleSaveEdit = (suggestion: AISuggestion) => {
-    // Save edited suggestion
+    const freshSuggestions =
+      useStore.getState().nodes.find((n) => n.id === nodeId)?.data.meta.suggestions ??
+      suggestions
     updateNode(nodeId, {
       meta: {
-        ...currentNode.data.meta,
-        suggestions: suggestions.map(s =>
+        suggestions: freshSuggestions.map((s) =>
           s.id === suggestion.id
             ? { ...s, content: editedContent, status: 'edited' as const }
             : s
